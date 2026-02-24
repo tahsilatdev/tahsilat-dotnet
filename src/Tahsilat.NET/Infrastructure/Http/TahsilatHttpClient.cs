@@ -74,7 +74,7 @@ namespace Tahsilat.NET.Infrastructure.Http
         }
 
         /// <summary>
-        /// Sync wrapper — eski .NET Framework ortamları için.
+        /// Sync wrapper — for legacy .NET Framework environments.
         /// </summary>
         public TResponse SendAndRead<TResponse>(HttpRequestMessage request)
         {

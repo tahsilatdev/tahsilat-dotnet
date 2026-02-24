@@ -8,15 +8,15 @@ using Tahsilat.NET.Configuration;
 namespace Tahsilat.NET.Extensions
 {
     /// <summary>
-    /// Tahsilat.NET için DI extension metodları
+    /// Tahsilat.NET DI extensions method
     /// </summary>
     public static class ServiceCollectionExtensions
     {
         /// <summary>
-        /// ITahsilatClient'ı DI container'a singleton olarak ekler.
+        /// Registers ITahsilatClient as a singleton in the DI container.
         /// </summary>
         /// <param name="services">IServiceCollection instance</param>
-        /// <param name="configureOptions">Options konfigürasyonu</param>
+        /// <param name="configureOptions">Options configuration delegate</param>
         /// <returns>IServiceCollection</returns>
         public static IServiceCollection AddTahsilat(
             this IServiceCollection services,

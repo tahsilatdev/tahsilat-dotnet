@@ -21,8 +21,8 @@ namespace Tahsilat.NET.Infrastructure.Http
         private DateTime _expiresAt;
 
         /// <summary>
-        /// Dışarıdan paylaşılan HttpClient ile oluşturur.
-        /// HttpClient yaşam döngüsü dışarıda yönetilir.
+        /// Initializes with an externally shared HttpClient.
+        /// HttpClient lifecycle is managed externally.
         /// </summary>
         public TokenManager(string secretKey, HttpClient httpClient)
         {
@@ -92,7 +92,7 @@ namespace Tahsilat.NET.Infrastructure.Http
         }
 
         /// <summary>
-        /// Sync wrapper — eski .NET Framework ortamları için.
+        /// Sync wrapper — for legacy .NET Framework environments.
         /// </summary>
         public string GetToken()
         {

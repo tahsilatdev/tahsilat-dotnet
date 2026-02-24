@@ -262,12 +262,6 @@ public class HomeController : Controller
     [HttpGet]
     public async Task<IActionResult> PaymentResult([FromQuery(Name = "transaction_id")] long transactionId)
     {
-        if (transactionId <= 0)
-        {
-            ViewBag.Error = "Geçersiz transaction ID.";
-            return View();
-        }
-
         try
         {
             var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
@@ -297,13 +291,6 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Callback(long? transaction_id)
     {
-        if (!transaction_id.HasValue)
-        {
-            ViewBag.Message = "Transaction ID is missing.";
-            ViewBag.Success = false;
-            return View();
-        }
-
         try
         {
             var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
@@ -379,8 +366,9 @@ public class HomeController : Controller
         try
         {
             var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-            var request = new CommissionSearchRequest { BinNumber = binNumber };
-            var result = await tahsilat.Commissions.SearchAsync(request);
+            //var request = new CommissionSearchRequest { BinNumber = binNumber };
+            //var result = await tahsilat.Commissions.SearchAsync(request);
+            var result = await tahsilat.Commissions.SearchAsync();
 
             ViewBag.Result = result;
             ViewBag.Price = price;
@@ -426,16 +414,6 @@ public class HomeController : Controller
     [HttpPost]
     public async Task<IActionResult> CreateCustomer(CustomerCreateRequest model)
     {
-        ModelState.Remove("Metadata");
-        if (!ModelState.IsValid)
-        {
-            ViewBag.Error = "Lütfen tüm alanları doldurunuz.";
-            var errors = ModelState.Values
-                           .SelectMany(v => v.Errors)
-                           .Select(e => e.ErrorMessage)
-                           .ToList();
-            return View(model);
-        }
         try
         {
             var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
@@ -459,11 +437,6 @@ public class HomeController : Controller
     [HttpPost]
     public async Task<IActionResult> PreAuthResolve(long transactionId, bool status)
     {
-        if (transactionId <= 0)
-        {
-            ViewBag.Error = "Lütfen geçerli bir Transaction ID giriniz.";
-            return View();
-        }
         try
         {
             var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");

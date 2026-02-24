@@ -7,15 +7,15 @@ namespace Tahsilat.NET.Infrastructure.Security
     internal static class WebhookSignatureValidator
     {
         /// <summary>
-        /// Varsayılan timestamp toleransı (replay koruması): 5 dakika.
+        /// Default timestamp tolerance (replay protection): 5 minutes.
         /// </summary>
         public static readonly TimeSpan DefaultTolerance = TimeSpan.FromMinutes(5);
 
         /// <summary>
-        /// X-Tahsilat-Signature header'ını parse eder.
+        /// Parses the X-Tahsilat-Signature header.
         /// Format: t=timestamp,v1=signature
         /// </summary>
-        /// <returns>Başarılı ise true, timestamp ve signature out parametreleri dolar.</returns>
+        /// <returns>Returns true on success; timestamp and signature out parameters are populated.</returns>
         public static bool ParseSignatureHeader(string header, out string timestamp, out string signature)
         {
             timestamp = null;
@@ -45,7 +45,7 @@ namespace Tahsilat.NET.Infrastructure.Security
         }
 
         /// <summary>
-        /// HMAC-SHA256 imzası hesaplar.
+        /// Computes an HMAC-SHA256 signature.
         /// signedPayload = timestamp + "." + payload
         /// </summary>
         public static string ComputeSignature(string secret, string timestamp, string payload)
@@ -62,7 +62,7 @@ namespace Tahsilat.NET.Infrastructure.Security
         }
 
         /// <summary>
-        /// HMAC-SHA256 imzası hesaplar (byte[] payload overload).
+        /// Computes an HMAC-SHA256 signature (byte[] payload overload).
         /// signedPayload = timestamp_bytes + "." + payloadBytes
         /// </summary>
         public static string ComputeSignature(string secret, string timestamp, byte[] payloadBytes)
@@ -82,12 +82,12 @@ namespace Tahsilat.NET.Infrastructure.Security
         }
 
         /// <summary>
-        /// Tam webhook doğrulaması: parse → compute → compare → timestamp check.
+        /// Full webhook validation: parse → compute → compare → timestamp check.
         /// </summary>
-        /// <param name="secretKey">Panelden alınan signing secret</param>
+        /// <param name="secretKey">Signing secret from the dashboard</param>
         /// <param name="payload">Request body (string)</param>
-        /// <param name="signatureHeader">X-Tahsilat-Signature header değeri (t=...,v1=...)</param>
-        /// <param name="tolerance">Timestamp toleransı. null ise timestamp kontrolü yapılmaz. Varsayılan 5 dakika.</param>
+        /// <param name="signatureHeader">X-Tahsilat-Signature header value (t=...,v1=...)</param>
+        /// <param name="tolerance">Timestamp tolerance. If null, timestamp check is skipped. Default is 5 minutes.</param>
         public static bool IsValid(string secretKey, string payload, string signatureHeader, TimeSpan? tolerance = null)
         {
             if (string.IsNullOrWhiteSpace(secretKey) ||
@@ -98,7 +98,7 @@ namespace Tahsilat.NET.Infrastructure.Security
             if (!ParseSignatureHeader(signatureHeader, out timestamp, out signature))
                 return false;
 
-            // Timestamp kontrolü (replay koruması)
+            // Timestamp check (replay protection)
             if (tolerance.HasValue && !IsTimestampValid(timestamp, tolerance.Value))
                 return false;
 
@@ -107,7 +107,7 @@ namespace Tahsilat.NET.Infrastructure.Security
         }
 
         /// <summary>
-        /// Tam webhook doğrulaması: byte[] payload overload.
+        /// Full webhook validation: byte[] payload overload.
         /// </summary>
         public static bool IsValid(string secretKey, byte[] payloadBytes, string signatureHeader, TimeSpan? tolerance = null)
         {
@@ -120,7 +120,7 @@ namespace Tahsilat.NET.Infrastructure.Security
             if (!ParseSignatureHeader(signatureHeader, out timestamp, out signature))
                 return false;
 
-            // Timestamp kontrolü (replay koruması)
+            // Timestamp check (replay protection)
             if (tolerance.HasValue && !IsTimestampValid(timestamp, tolerance.Value))
                 return false;
 
@@ -129,7 +129,7 @@ namespace Tahsilat.NET.Infrastructure.Security
         }
 
         /// <summary>
-        /// Unix timestamp'ın belirtilen tolerans içinde olup olmadığını kontrol eder.
+        /// Checks whether the Unix timestamp is within the specified tolerance.
         /// </summary>
         private static bool IsTimestampValid(string timestampStr, TimeSpan tolerance)
         {
@@ -143,7 +143,7 @@ namespace Tahsilat.NET.Infrastructure.Security
         }
 
         /// <summary>
-        /// Constant-time string karşılaştırma (timing attack koruması).
+        /// Constant-time string comparison (timing attack protection).
         /// </summary>
         private static bool FixedTimeEquals(string a, string b)
         {
@@ -171,8 +171,8 @@ namespace Tahsilat.NET.Infrastructure.Security
         }
 
         /// <summary>
-        /// Şu anki UTC zamanını Unix timestamp (saniye) olarak döndürür.
-        /// .NET 4.5.2'de DateTimeOffset.ToUnixTimeSeconds() yoktur.
+        /// Returns the current UTC time as a Unix timestamp (seconds).
+        /// DateTimeOffset.ToUnixTimeSeconds() is not available in .NET 4.5.2.
         /// </summary>
         private static long GetUnixTimeSeconds()
         {
@@ -187,7 +187,7 @@ namespace Tahsilat.NET.Infrastructure.Security
         }
 
         /// <summary>
-        /// Byte dizisini lowercase hex string'e çevirir.
+        /// Converts a byte array to a lowercase hex string.
         /// </summary>
         private static string BytesToHex(byte[] bytes)
         {

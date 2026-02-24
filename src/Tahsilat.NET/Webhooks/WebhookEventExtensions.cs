@@ -12,7 +12,7 @@ namespace Tahsilat.NET.Webhooks
         #region Payment Status Checks
 
         /// <summary>
-        /// Ödemenin başarılı olup olmadığını kontrol eder.
+        /// Checks whether the payment was successful.
         /// PHP SDK: $event->isSuccess()
         /// </summary>
         public static bool IsSuccess(this WebhookEvent evt)
@@ -22,7 +22,7 @@ namespace Tahsilat.NET.Webhooks
         }
 
         /// <summary>
-        /// Ödemenin başarısız olup olmadığını kontrol eder.
+        /// Checks whether the payment has failed.
         /// PHP SDK: $event->isFailed()
         /// </summary>
         public static bool IsFailed(this WebhookEvent evt)
@@ -32,7 +32,7 @@ namespace Tahsilat.NET.Webhooks
         }
 
         /// <summary>
-        /// Ödemenin beklemede olup olmadığını kontrol eder.
+        /// Checks whether the payment is pending.
         /// </summary>
         public static bool IsPending(this WebhookEvent evt)
         {
@@ -45,7 +45,7 @@ namespace Tahsilat.NET.Webhooks
         #region Transaction Status Checks
 
         /// <summary>
-        /// İşlemin tamamlanıp tamamlanmadığını kontrol eder.
+        /// Checks whether the transaction is completed.
         /// </summary>
         public static bool IsCompleted(this WebhookEvent evt)
         {
@@ -54,7 +54,7 @@ namespace Tahsilat.NET.Webhooks
         }
 
         /// <summary>
-        /// İşlemin iptal edilip edilmediğini kontrol eder.
+        /// Checks whether the transaction is cancelled.
         /// </summary>
         public static bool IsCancelled(this WebhookEvent evt)
         {
@@ -63,7 +63,7 @@ namespace Tahsilat.NET.Webhooks
         }
 
         /// <summary>
-        /// İşlemin iade edilip edilmediğini kontrol eder (tam veya kısmi).
+        /// Checks whether the transaction has been refunded (full or partial).
         /// </summary>
         public static bool IsRefunded(this WebhookEvent evt)
         {
@@ -76,7 +76,7 @@ namespace Tahsilat.NET.Webhooks
         #region Payment Method Checks
 
         /// <summary>
-        /// Ödemenin 3D Secure ile yapılıp yapılmadığını kontrol eder.
+        /// Checks whether the payment was made using 3D Secure.
         /// PHP SDK: payment_method_text == "is_3d"
         /// </summary>
         public static bool Is3D(this WebhookEvent evt)
@@ -86,7 +86,7 @@ namespace Tahsilat.NET.Webhooks
         }
 
         /// <summary>
-        /// Ödemenin 2D (non-3DS) ile yapılıp yapılmadığını kontrol eder.
+        /// Checks whether the payment was made using 2D (non-3DS).
         /// PHP SDK: payment_method_text == "is_2d"
         /// </summary>
         public static bool Is2D(this WebhookEvent evt)

@@ -18,14 +18,14 @@ namespace Tahsilat.NET.Models.Common
         public object Errors { get; set; }
 
         /// <summary>
-        /// Errors'ı düzgün formatta döner (her iki format için)
+        /// Returns errors in a normalized format (handles both array and object formats).
         /// </summary>
         public List<string> GetErrorList()
         {
             if (Errors == null)
                 return new List<string>();
 
-            // Zaten List<string> ise
+            // Already a List<string>
             if (Errors is Newtonsoft.Json.Linq.JArray jArray)
             {
                 return jArray.ToObject<List<string>>() ?? new List<string>();

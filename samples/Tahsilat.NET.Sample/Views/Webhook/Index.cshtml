@@ -1,0 +1,92 @@
+@model List<(DateTime ReceivedAt, Tahsilat.NET.Webhooks.WebhookEvent Event)>
+
+@{
+    ViewData["Title"] = "Webhook Logs";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2> Webhook Logs</h2>
+        <span class="badge bg-secondary fs-6">@Model.Count kayıt</span>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <strong> Webhook Test Kurulumu</strong>
+        </div>
+        <div class="card-body">
+            <p>Webhook'ları lokal ortamda test etmek için bir tunnel aracı kullanmanız gerekir. Aşağıdaki adımları takip edin:</p>
+            <ol>
+                <li>
+                    <strong>ngrok</strong> veya benzeri bir tunnel aracı kurun:
+                    <pre class="bg-light p-2 mt-1"><code>ngrok http 5000</code> veya <code>http https://localhost:5000/</code></pre>
+                </li>
+                <li>
+                    Oluşan public URL'i kopyalayın (örn: <code>https://abcdef.ngrok-free.app/webhook/receive</code>)
+                </li>
+                <li>
+                    Tahsilat Dashboard'dan webhook URL'inizi ayarlayın:
+                    <pre class="bg-light p-2 mt-1"><code>https://abcdef.ngrok-free.app/webhook/receive</code></pre>
+                </li>
+                <li>
+                    Bir ödeme işlemi gerçekleştirin — webhook bu sayfada görünecektir.
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <strong>Henüz webhook alınmadı.</strong> Bir ödeme işlemi gerçekleştirdiğinizde burada görünecektir.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Transaction ID</th>
+                        <th>Tutar</th>
+                        <th>Para Birimi</th>
+                        <th>Ödeme Durumu</th>
+                        <th>İşlem Durumu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var (receivedAt, evt) in Model)
+                    {
+                        var badgeClass = evt.PaymentStatus switch
+                        {
+                            1 => "bg-success",
+                            2 => "bg-danger",
+                            3 => "bg-warning text-dark",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr>
+                            <td>@receivedAt.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                            <td><code>@evt.TransactionId</code></td>
+                            <td>@((evt.Amount / 100m).ToString("N2"))</td>
+                            <td>@evt.CurrencyCode</td>
+                            <td>
+                                <span class="badge @badgeClass">
+                                    @(evt.PaymentStatus switch
+                                    {
+                                        1 => "Başarılı",
+                                        2 => "Başarısız",
+                                        3 => "Beklemede",
+                                        _ => $"Bilinmiyor ({evt.PaymentStatus})"
+                                    })
+                                </span>
+                            </td>
+                            <td>@evt.TransactionStatusText</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
