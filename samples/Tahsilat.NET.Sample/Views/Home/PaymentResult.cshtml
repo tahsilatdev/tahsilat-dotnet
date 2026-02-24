@@ -1,0 +1,73 @@
+﻿@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Ödeme Sonucu";
+}
+<h2>Ödeme Sonucu</h2>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">
+                <i class="bi bi-x-circle-fill"></i> @ViewBag.Error
+            </div>
+        }
+
+        @if (ViewBag.Success == true)
+        {
+            <div class="alert alert-success">
+                <i class="bi bi-check-circle-fill"></i> <strong>Ödeme Başarılı!</strong>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Transaction ID</dt>
+                        <dd class="col-sm-7">@ViewBag.TransactionId</dd>
+
+                        @if (ViewBag.Transaction != null)
+                        {
+                            <dt class="col-sm-5">Tutar</dt>
+                            <dd class="col-sm-7">@ViewBag.Transaction.Amount @ViewBag.Transaction.CurrencyCode</dd>
+
+                            <dt class="col-sm-5">Ödeme Durumu</dt>
+                            <dd class="col-sm-7">@ViewBag.Transaction.PaymentStatusText</dd>
+
+                            <dt class="col-sm-5">İşlem Durumu</dt>
+                            <dd class="col-sm-7">@ViewBag.Transaction.TransactionStatusText</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        }
+        else if (ViewBag.Success == false && ViewBag.Transaction != null)
+        {
+            <div class="card">
+                <div class="card-header bg-warning text-dark">İşlem Detayları</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Transaction ID</dt>
+                        <dd class="col-sm-7">@ViewBag.TransactionId</dd>
+
+                        <dt class="col-sm-5">Ödeme Durumu</dt>
+                        <dd class="col-sm-7">@ViewBag.Transaction.PaymentStatusText</dd>
+
+                        <dt class="col-sm-5">İşlem Durumu</dt>
+                        <dd class="col-sm-7">@ViewBag.Transaction.TransactionStatusText</dd>
+                    </dl>
+                </div>
+            </div>
+        }
+
+        @if (ViewBag.Transaction != null)
+        {
+            <details class="mt-3">
+                <summary>Raw JSON Response</summary>
+                <pre>@JsonSerializer.Serialize(ViewBag.Transaction, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </details>
+        }
+
+        <div class="mt-3">
+            <a asp-action="Index" class="btn btn-primary">Ana Sayfaya Dön</a>
+        </div>
+    </div>
+</div>

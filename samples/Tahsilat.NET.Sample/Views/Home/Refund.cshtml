@@ -1,0 +1,44 @@
+@using System.Text.Json
+@model Tahsilat.NET.Models.Requests.RefundCreateRequest
+@{
+    ViewData["Title"] = "Refund Transaction";
+}
+
+<h2>Refund Transaction</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">
+                @ViewBag.Error
+            </div>
+        }
+
+        @if (ViewBag.Result != null)
+        {
+            <div class="alert alert-success">
+                <strong>Status:</strong> @ViewBag.Result.Status <br />
+                <strong>Message:</strong> @ViewBag.Result.Message
+            </div>
+            <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
+        }
+
+        <form asp-action="Refund" method="post">
+            <div class="mb-3">
+                <label for="transactionId" class="form-label">Transaction ID</label>
+                <input type="number" class="form-control" name="transactionId">
+            </div>
+            <div class="mb-3">
+                <label for="amount" class="form-label">Amount</label>
+                <input type="number" class="form-control" name="amount">
+                <small class="text-muted">Örn: 1000 = 10.00 TL</small>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" name="description" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-warning">Process Refund</button>
+        </form>
+    </div>
+</div>

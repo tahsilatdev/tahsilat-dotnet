@@ -1,0 +1,69 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Bin Sorgulama";
+}
+<div class="text-center">
+    <h1 class="display-4">Bin Sorgulama</h1>
+    <p>Kartınızın ilk 6 veya 8 hanesini girerek banka bilgilerini sorgulayabilirsiniz.</p>
+</div>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <form asp-action="BinLookup" method="post">
+            <div class="form-group mb-3">
+                <label for="binNumber">Bin Numarası</label>
+                <input type="number" class="form-control" id="binNumber" name="binNumber" placeholder="Örn: 489455"/>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Sorgula</button>
+        </form>
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger mt-3">
+                @ViewBag.Error
+            </div>
+        }
+        @if (ViewBag.Result != null)
+        {
+            var result = ViewBag.Result;
+            <div class="card mt-3">
+                <div class="card-header bg-success text-white">
+                    Sonuç Bulundu
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty((string)result.BankImage))
+                    {
+                        <div class="text-center mb-3">
+                            <img src="@result.BankImage" alt="@result.BankName" style="max-height: 48px;" />
+                        </div>
+                    }
+                    <dl class="row">
+                        <dt class="col-sm-4">Bin Numarası</dt>
+                        <dd class="col-sm-8">@result.BinNumber</dd>
+
+                        <dt class="col-sm-4">Banka Kodu</dt>
+                        <dd class="col-sm-8">@result.BankCode</dd>
+
+                        <dt class="col-sm-4">Banka Adı</dt>
+                        <dd class="col-sm-8">@result.BankName</dd>
+
+                        <dt class="col-sm-4">Kart Tipi</dt>
+                        <dd class="col-sm-8">@result.CardType</dd>
+
+                        <dt class="col-sm-4">Kart Markası</dt>
+                        <dd class="col-sm-8">
+                            @result.CardBrand
+                            @if (!string.IsNullOrEmpty((string)result.CardBrandImageUrl))
+                            {
+                                <img src="@result.CardBrandImageUrl" alt="@result.CardBrand" style="max-height: 24px; margin-left: 8px;" />
+                            }
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <details>
+                <summary>Raw JSON Response</summary>
+                <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </details>
+        }
+    </div>
+</div>

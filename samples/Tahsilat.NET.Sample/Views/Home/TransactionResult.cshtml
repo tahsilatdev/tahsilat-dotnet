@@ -1,0 +1,61 @@
+﻿@using System.Text.Json
+
+@{
+    ViewData["Title"] = "İşlem Sonucu Sorgulama";
+}
+<div class="text-center">
+    <h1 class="display-4">İşlem Sonucu Sorgulama</h1>
+    <p>İşlem numaranısı girerek daha önce ki işlemlerinizin detaylarına erişebilirsiniz..</p>
+</div>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <form asp-action="TransactionResult" method="post">
+            <div class="form-group mb-3">
+                <label for="transactionId">İşlem Numarası</label>
+                <input type="number" class="form-control" id="transactionId" name="transactionId" placeholder="Örn: 375959878454"/>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Sorgula</button>
+        </form>
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger mt-3">
+                @ViewBag.Error
+            </div>
+        }
+        @if (ViewBag.Result != null)
+        {
+            var result = ViewBag.Result;
+            <div class="card mt-3">
+                <div class="card-header bg-success text-white">
+                    Sonuç Bulundu
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">İşlem Numarası</dt>
+                        <dd class="col-sm-8">@result.TransactionId</dd>
+
+                        <dt class="col-sm-4">Tutar</dt>
+                        <dd class="col-sm-8">@result.FormattedAmount @result.CurrencyCode </dd>
+
+                        <dt class="col-sm-4">Taksit Sayısı</dt>
+                        <dd class="col-sm-8">@result.InstallmentCount</dd>
+
+                        <dt class="col-sm-4">Ödeme Durumu</dt>
+                        <dd class="col-sm-8">@result.PaymentStatusText</dd>
+
+                        <dt class="col-sm-4">İşlem Durumu</dt>
+                        <dd class="col-sm-8">@result.TransactionStatusText</dd>
+
+                        <dt class="col-sm-4">İşlem Sonucu</dt>
+                        <dd class="col-sm-8">@result.TransactionMessage</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <details>
+                <summary>Raw JSON Response</summary>
+                <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </details>
+        }
+    </div>
+</div>

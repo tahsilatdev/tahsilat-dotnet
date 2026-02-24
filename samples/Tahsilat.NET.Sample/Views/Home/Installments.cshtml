@@ -1,0 +1,82 @@
+@using System.Text.Json
+@using Tahsilat.NET.Models.Responses
+@{
+    ViewData["Title"] = "Taksit Seçenekleri";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Taksit Seçenekleri</h1>
+    <p>Kartınızın ilk 6 hanesini girerek taksit seçeneklerini görebilirsiniz.</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <form asp-action="Installments" method="post">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group mb-3">
+                        <label for="binNumber">Bin Numarası</label>
+                        <input type="number" class="form-control" id="binNumber" name="binNumber" placeholder="Örn: 489455" maxlength="8" value="@Context.Request.Query["binNumber"]" />
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Sorgula</button>
+        </form>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger mt-3">
+                @ViewBag.Error
+            </div>
+        }
+
+        @if (ViewBag.Result != null)
+        {
+            var result = ViewBag.Result as List<CommissionResponse>;
+            
+            <div class="card mt-3">
+                <div class="card-header bg-primary text-white">
+                    Taksit Seçenekleri
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Taksit Sayısı</th>
+                                <th>Komisyon Oranı (%)</th>
+                                @if (ViewBag.Price != null)
+                                {
+                                    <th>Tahmini Toplam Tutar</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (result != null)
+                            {
+                                foreach (var item in result.OrderBy(x => x.Installment))
+                                {
+                                    <tr>
+                                        <td>@(((item.Installment == 1) ? "Tek Çekim" : item.Installment + " Taksit"))</td>
+                                        <td>@item.CommissionRate</td>
+                                        @if (ViewBag.Price != null)
+                                        {
+                                            decimal price = (decimal)ViewBag.Price;
+                                            decimal total = price + (price * item.CommissionRate / 100);
+                                            <td>@total.ToString("C2")</td>
+                                        }
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <details>
+                <summary>Raw JSON Response</summary>
+                <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </details>
+
+        }
+    </div>
+</div>
+

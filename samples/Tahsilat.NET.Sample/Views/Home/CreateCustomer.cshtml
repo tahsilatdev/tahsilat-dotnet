@@ -1,0 +1,105 @@
+@using System.Text.Json
+@model Tahsilat.NET.Models.Requests.CustomerCreateRequest
+@{
+    ViewData["Title"] = "Create Customer";
+}
+<h2>Create Customer</h2>
+<div class="row">
+    <div class="col-md-6">
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">
+                @ViewBag.Error
+            </div>
+        }
+        @if (ViewBag.Result != null)
+        {
+            var result = ViewBag.Result;
+            <div class="alert alert-success">
+                <strong>Baþarýlý!</strong> Müþteri Oluþturuldu. Müþteri ID: @result.Id
+            </div>
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">Müþteri Detaylarý</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">ID</dt>
+                        <dd class="col-sm-8">@result.Id</dd>
+
+                        <dt class="col-sm-4">Adý Soyadý</dt>
+                        <dd class="col-sm-8">@result.NameLastName</dd>
+
+                        <dt class="col-sm-4">Email</dt>
+                        <dd class="col-sm-8">@result.Email</dd>
+
+                        <dt class="col-sm-4">Telefon</dt>
+                        <dd class="col-sm-8">@result.PhoneCode @result.Phone</dd>
+
+                        <dt class="col-sm-4">Ülke</dt>
+                        <dd class="col-sm-8">
+                            @result.Country
+                            @if (!string.IsNullOrEmpty((string)result.CountryFlagUrl))
+                            {
+                                <img src="@result.CountryFlagUrl" alt="flag" style="max-height: 16px; margin-left: 4px;" />
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Þehir / Ýlçe</dt>
+                        <dd class="col-sm-8">@result.City / @result.District</dd>
+
+                        <dt class="col-sm-4">Adres</dt>
+                        <dd class="col-sm-8">@result.Address</dd>
+
+                        <dt class="col-sm-4">Posta Kodu</dt>
+                        <dd class="col-sm-8">@result.ZipCode</dd>
+
+                        <dt class="col-sm-4">Oluþturulma Tarihi</dt>
+                        <dd class="col-sm-8">@result.FormattedCreatedAt</dd>
+                    </dl>
+                </div>
+            </div>
+            <details>
+                <summary>Raw JSON Response</summary>
+                <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </details>
+        }
+        <form asp-action="CreateCustomer" method="post">
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">First Name</label>
+                <input asp-for="Name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label asp-for="LastName" class="form-label">Last Name</label>
+                <input asp-for="LastName" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label">Email</label>
+                <input asp-for="Email" type="email" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Phone" class="form-label">Phone</label>
+                <input asp-for="Phone" class="form-control" placeholder="+905...">
+            </div>
+            <div class="mb-3">
+                <label asp-for="Country" class="form-label">Country Code (2-letter)</label>
+                <input asp-for="Country" class="form-control" value="TR">
+            </div>
+            <div class="mb-3">
+                <label asp-for="City" class="form-label">City</label>
+                <input asp-for="City" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label asp-for="District" class="form-label">District</label>
+                <input asp-for="District" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label asp-for="Address" class="form-label">Address</label>
+                <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="mb-3">
+                <label asp-for="ZipCode" class="form-label">Zip Code</label>
+                <input asp-for="ZipCode" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-success">Create Customer</button>
+        </form>
+    </div>
+</div>

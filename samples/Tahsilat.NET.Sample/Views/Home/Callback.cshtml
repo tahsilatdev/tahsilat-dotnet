@@ -1,0 +1,31 @@
+
+<div class="text-center mt-5">
+    @if (ViewBag.Success == true)
+    {
+        <div class="alert alert-success display-4">
+            <i class="bi bi-check-circle-fill"></i> Success!
+        </div>
+        <h2 class="text-success">@ViewBag.Message</h2>
+    }
+    else
+    {
+        <div class="alert alert-danger display-4">
+            <i class="bi bi-x-circle-fill"></i> Failed!
+        </div>
+         <h2 class="text-danger">@ViewBag.Message</h2>
+    }
+
+    <div class="mt-4">
+        <a asp-action="Index" class="btn btn-primary">Back to Store</a>
+    </div>
+
+    @if (ViewBag.Details != null)
+    {
+        <div class="card mt-5 mx-auto" style="max-width: 600px;">
+            <div class="card-header">Transaction Details</div>
+            <div class="card-body text-start">
+               <pre>@System.Text.Json.JsonSerializer.Serialize(ViewBag.Details, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })</pre>
+            </div>
+        </div>
+    }
+</div>

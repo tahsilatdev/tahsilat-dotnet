@@ -1,0 +1,47 @@
+@using System.Text.Json
+@model Tahsilat.NET.Models.Requests.ProductCreateRequest
+@{
+    ViewData["Title"] = "Create Product";
+}
+<h2>Create Product</h2>
+<div class="row">
+    <div class="col-md-6">
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">
+                @ViewBag.Error
+            </div>
+        }
+        @if (ViewBag.Result != null)
+        {
+            <div class="alert alert-success">
+                <strong>Success!</strong> Product Created with ID: @ViewBag.Result.Id
+            </div>
+            <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
+        }
+        <form asp-action="CreateProduct" method="post">
+            <div class="mb-3">
+                <label asp-for="ProductName" class="form-label">Product Name</label>
+                <input asp-for="ProductName" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Price" class="form-label">Price</label>
+                <input asp-for="Price" type="number" class="form-control" required>
+                <small class="text-muted">Örn: 75900 = 759.00 TL</small>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label">Description</label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+                <label asp-for="StockCode" class="form-label">Stock Code</label>
+                <input asp-for="StockCode" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label asp-for="Category" class="form-label">Category</label>
+                <input asp-for="Category" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-success">Create Product</button>
+        </form>
+    </div>
+</div>

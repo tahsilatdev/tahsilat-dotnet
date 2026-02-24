@@ -1,0 +1,53 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- Çoklu framework desteği -->
+		<TargetFrameworks>net452;net462;net472;net48;netstandard2.0;netstandard2.1;net8.0;net9.0</TargetFrameworks>
+
+		<!-- NuGet bilgileri -->
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageId>tahsilat-dotnet</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>Tahsilat.com Ödeme Sistemleri</Authors>
+		<Company>Tahsilat.com Ödeme Sistemleri</Company>
+		<Product>Tahsilat Payment Resmi Gateway .NET SDK</Product>
+		<Description>Tahsilat.com ödeme entegrasyonu için resmi .NET SDK</Description>
+		<PackageTags>tahsilat;payment;virtual-pos;pos</PackageTags>
+
+		<RepositoryUrl>https://github.com/tahsilatdev/tahsilat-dotnet</RepositoryUrl>
+		<PackageProjectUrl>https://tahsilat.com/</PackageProjectUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+		<NeutralLanguage>tr-TR</NeutralLanguage>
+
+		<LangVersion>8.0</LangVersion>
+	</PropertyGroup>
+
+	<!-- Nullable desteği: sadece modern framework'ler için -->
+	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.1' OR '$(TargetFramework)' == 'net8.0' OR '$(TargetFramework)' == 'net9.0'">
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	</ItemGroup>
+
+	<!-- System.Net.Http sadece .NET Framework hedefleri için gerekli -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net452' OR '$(TargetFramework)' == 'net462' OR '$(TargetFramework)' == 'net472' OR '$(TargetFramework)' == 'net48'">
+		<PackageReference Include="System.Net.Http" Version="4.3.4" />
+	</ItemGroup>
+
+	<!-- DI desteği: netstandard2.0+ ve net6.0+ için -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard2.1' OR '$(TargetFramework)' == 'net8.0' OR '$(TargetFramework)' == 'net9.0'">
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
+	</ItemGroup>
+
+
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Tahsilat.NET.Tests" />
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	</ItemGroup>
+
+</Project>

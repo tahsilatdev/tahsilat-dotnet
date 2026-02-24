@@ -1,0 +1,43 @@
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Tahsilat.NET.Models.Requests
+{
+    public class CustomerUpdateRequest
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("lastname")]
+        public string Lastname { get; set; }
+
+        [JsonProperty("email")]
+        public string Email { get; set; }
+
+        [JsonProperty("phone")]
+        public string Phone { get; set; }
+
+        [JsonProperty("country")]
+        public string Country { get; set; }
+
+        [JsonProperty("city")]
+        public string City { get; set; }
+
+        [JsonProperty("district")]
+        public string District { get; set; }
+
+        [JsonProperty("address")]
+        public string Address { get; set; }
+
+        [JsonProperty("zip_code")]
+        public string ZipCode { get; set; }
+
+        [JsonProperty("metadata")]
+        public List<Dictionary<string, object>> Metadata { get; set; }
+    }
+}

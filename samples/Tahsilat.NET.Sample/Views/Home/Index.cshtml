@@ -1,0 +1,27 @@
+﻿@{
+    ViewData["Title"] = "Store";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Test Uygulaması</h1>
+    
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger">
+            @ViewBag.Error
+        </div>
+    }
+
+    <div class="card mx-auto" style="width: 18rem;">
+        <img src="https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-finish-select-202309-6-7inch-naturaltitanium?wid=5120&hei=2880&fmt=p-jpg&qlt=80&.v=1692845761595" class="card-img-top" alt="iPhone 15 Pro Max">
+        <div class="card-body">
+            <h5 class="card-title">@ViewBag.Product</h5>
+            <p class="card-text">Best iPhone ever made.</p>
+            <h3 class="card-text text-primary">@ViewBag.Price TL</h3>
+            
+            <form asp-action="Checkout" method="post">
+                <button type="submit" class="btn btn-primary btn-lg btn-block">Satın Al</button>
+            </form>
+        </div>
+    </div>
+</div>
