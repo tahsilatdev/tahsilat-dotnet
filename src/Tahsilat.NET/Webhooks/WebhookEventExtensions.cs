@@ -13,17 +13,15 @@ namespace Tahsilat.NET.Webhooks
 
         /// <summary>
         /// Checks whether the payment was successful.
-        /// PHP SDK: $event->isSuccess()
         /// </summary>
         public static bool IsSuccess(this WebhookEvent evt)
         {
             if (evt == null) throw new ArgumentNullException(nameof(evt));
-            return evt.PaymentStatus == 1; // PaymentStatus.Success
+            return evt.PaymentStatus == 1 && (evt.TransactionStatus == 2 || evt.TransactionStatus == 3);
         }
 
         /// <summary>
         /// Checks whether the payment has failed.
-        /// PHP SDK: $event->isFailed()
         /// </summary>
         public static bool IsFailed(this WebhookEvent evt)
         {
@@ -77,7 +75,6 @@ namespace Tahsilat.NET.Webhooks
 
         /// <summary>
         /// Checks whether the payment was made using 3D Secure.
-        /// PHP SDK: payment_method_text == "is_3d"
         /// </summary>
         public static bool Is3D(this WebhookEvent evt)
         {
@@ -87,7 +84,6 @@ namespace Tahsilat.NET.Webhooks
 
         /// <summary>
         /// Checks whether the payment was made using 2D (non-3DS).
-        /// PHP SDK: payment_method_text == "is_2d"
         /// </summary>
         public static bool Is2D(this WebhookEvent evt)
         {

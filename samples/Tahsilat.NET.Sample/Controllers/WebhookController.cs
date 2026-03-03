@@ -10,7 +10,7 @@ namespace Tahsilat.NET.Sample.Controllers
         private static readonly ConcurrentBag<(DateTime ReceivedAt, WebhookEvent Event)> _events = new();
         private readonly ILogger<WebhookController> _logger;
 
-        private const string WebhookSecret = "whsec_YOUR_WEBHOOK_SECRET";
+        private const string WebhookSecret = "whsec_key";
 
         public WebhookController(ILogger<WebhookController> logger)
         {
@@ -26,20 +26,16 @@ namespace Tahsilat.NET.Sample.Controllers
         [HttpPost]
         public async Task<IActionResult> Receive()
         {
-            // 1. Request body'yi oku
             using var ms = new MemoryStream();
             await Request.Body.CopyToAsync(ms);
             var payloadBytes = ms.ToArray();
 
-            // 2. Signature header'ını al
             var signature = Request.Headers["X-Tahsilat-Signature"].FirstOrDefault() ?? string.Empty;
 
             try
             {
-                // 3. Webhook event'i doğrula ve parse et
                 var webhookEvent = WebhookHandler.ConstructEvent(payloadBytes, signature, WebhookSecret);
 
-                // 4. Ödeme durumuna göre işlem yap
                 if (webhookEvent.IsSuccess())
                 {
                     _logger.LogInformation(

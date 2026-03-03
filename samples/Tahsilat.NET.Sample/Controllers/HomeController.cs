@@ -33,7 +33,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
+            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
 
             //1. Doğrudan Ödeme
             //var request = new PaymentCreateRequest
@@ -227,16 +227,15 @@ public class HomeController : Controller
             var request = new PaymentCreateRequest
             {
                 Currency = "TRY",
-                Amount = 500000,
+                Amount = 1000,
                 Metadata = new()
                 {
                     new Dictionary<string, object>
                     {
-                        ["customer_type"] = "premium",
-                        ["special_id"] = 123456
+                        ["order_id"] = 123456,
+                        ["customer_type"] = "premium"
                     }
-                },
-                RedirectUrl = $"{Request.Scheme}://{Request.Host}/Home/PaymentResult"
+                }
             };
 
             var response = await tahsilat.Payments.CreateAsync(request);
@@ -264,7 +263,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
+            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
             var transaction = await tahsilat.Transactions.RetrieveAsync(transactionId);
 
             ViewBag.TransactionId = transactionId;
@@ -293,7 +292,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
+            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
             var transaction = await tahsilat.Transactions.RetrieveAsync(transaction_id.Value);
 
             if (transaction.PaymentStatus == 1) // 1 = Success
@@ -341,7 +340,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
+            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
             var result = await tahsilat.BinLookup.DetailAsync(binNumber);
             ViewBag.Result = result;
         }
@@ -350,7 +349,7 @@ public class HomeController : Controller
             _logger.LogError(ex, "Bin Sorgulama hatası.");
             ViewBag.Error = ex.Message;
         }
-
+        
         return View();
     }
 
@@ -365,7 +364,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
+            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
             //var request = new CommissionSearchRequest { BinNumber = binNumber };
             //var result = await tahsilat.Commissions.SearchAsync(request);
             var result = await tahsilat.Commissions.SearchAsync();
@@ -393,7 +392,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
+            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
             var result = await tahsilat.Products.CreateAsync(model);
             ViewBag.Result = result;
         }
@@ -416,7 +415,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
+            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
             var result = await tahsilat.Customers.CreateAsync(model);
             ViewBag.Result = result;
         }
@@ -439,14 +438,14 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-            var req = new PreAuthResolveRequest
+            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
+            var request = new PreAuthResolveRequest
             {
                 TransactionId = transactionId,
                 Status = status
             };
-            var result = await tahsilat.Transactions.ResolvePreAuthAsync(req);
-            ViewBag.Result = result;
+            var response = await tahsilat.Transactions.ResolvePreAuthAsync(request);
+            ViewBag.Result = response;
         }
         catch (Exception ex)
         {
@@ -467,7 +466,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
+            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
             var result = await tahsilat.Transactions.RefundAsync(model);
             ViewBag.Result = result;
         }
@@ -490,7 +489,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
+            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
             var result = await tahsilat.Transactions.RetrieveAsync(transactionId);
             ViewBag.Result = result;
         }

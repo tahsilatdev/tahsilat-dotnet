@@ -11,11 +11,9 @@ namespace Tahsilat.NET.Infrastructure.Http
     /// <summary>
     /// Converts objects to FormUrlEncodedContent.
     /// Complex objects (lists, dictionaries) are serialized as JSON strings.
-    /// This matches PHP SDK behavior where nested arrays are sent as JSON strings.
     /// </summary>
     internal static class FormUrlEncodedContentBuilder
     {
-        // Fields that should be serialized as JSON strings (complex objects)
         private static readonly HashSet<string> JsonStringFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "products",
@@ -43,7 +41,6 @@ namespace Tahsilat.NET.Infrastructure.Http
                 var value = prop.GetValue(obj);
                 if (value == null) continue;
 
-                // Get JSON property name or use property name
                 var jsonAttr = prop.GetCustomAttribute<JsonPropertyAttribute>();
                 var propName = jsonAttr?.PropertyName ?? prop.Name;
 
@@ -53,14 +50,12 @@ namespace Tahsilat.NET.Infrastructure.Http
                     continue;
                 }
 
-                // Product IDs i�in PHP array format�
                 if (propName.Equals("product_ids", StringComparison.OrdinalIgnoreCase))
                 {
                     AppendPhpArray(propName, value, result);
                     continue;
                 }
 
-                // Check if this field should be serialized as JSON string
                 if (JsonStringFields.Contains(propName))
                 {
                     var jsonValue = JsonConvert.SerializeObject(value);
@@ -68,13 +63,11 @@ namespace Tahsilat.NET.Infrastructure.Http
                 }
                 else if (IsComplexType(value))
                 {
-                    // Other complex types are also serialized as JSON
                     var jsonValue = JsonConvert.SerializeObject(value);
                     result.Add(new KeyValuePair<string, string>(propName, jsonValue));
                 }
                 else
                 {
-                    // Primitive types
                     result.Add(new KeyValuePair<string, string>(propName, ConvertToString(value)));
                 }
             }
@@ -86,26 +79,22 @@ namespace Tahsilat.NET.Infrastructure.Http
             
             var type = value.GetType();
             
-            // Primitive types and string are not complex
             if (type.IsPrimitive || value is string || value is decimal)
                 return false;
             
-            // Enums are not complex
             if (type.IsEnum)
                 return false;
             
-            // DateTime is not complex
             if (value is DateTime)
                 return false;
             
-            // Everything else (arrays, lists, dictionaries, objects) is complex
             return true;
         }
 
         private static string ConvertToString(object value)
         {
             if (value is bool b)
-                return b ? "1" : "0"; // PHP style boolean
+                return b ? "1" : "0";
 
             if (value is DateTime dt)
                 return dt.ToString("o");

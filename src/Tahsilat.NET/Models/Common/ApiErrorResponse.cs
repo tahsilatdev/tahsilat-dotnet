@@ -25,13 +25,11 @@ namespace Tahsilat.NET.Models.Common
             if (Errors == null)
                 return new List<string>();
 
-            // Already a List<string>
             if (Errors is Newtonsoft.Json.Linq.JArray jArray)
             {
                 return jArray.ToObject<List<string>>() ?? new List<string>();
             }
 
-            // Object ise (validation errors)
             if (Errors is Newtonsoft.Json.Linq.JObject jObject)
             {
                 var errorList = new List<string>();
