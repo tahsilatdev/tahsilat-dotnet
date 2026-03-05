@@ -10,7 +10,7 @@ namespace Tahsilat.NET.Sample.Controllers
         private static readonly ConcurrentBag<(DateTime ReceivedAt, WebhookEvent Event)> _events = new();
         private readonly ILogger<WebhookController> _logger;
 
-        private const string WebhookSecret = "whsec_key";
+        private const string WebhookSecret = "whkey_secret_buraya";
 
         public WebhookController(ILogger<WebhookController> logger)
         {

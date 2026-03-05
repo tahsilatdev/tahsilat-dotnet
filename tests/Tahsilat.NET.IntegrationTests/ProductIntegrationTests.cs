@@ -20,8 +20,6 @@ namespace Tahsilat.NET.IntegrationTests
                 ProductName = "Test Product",
                 Price = 75900,
                 Description = "Integration Test Product",
-                StockCode = "TEST",
-                Category = "TEST",
                 Metadata = new()
                 {
                     new Dictionary<string, object>

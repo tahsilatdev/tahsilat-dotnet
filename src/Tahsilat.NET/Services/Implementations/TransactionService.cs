@@ -20,11 +20,11 @@ namespace Tahsilat.NET.Services.Implementations
             return response?.Data;
         }
 
-        public async Task<PreAuthResolveResponse> ResolvePreAuthAsync(PreAuthResolveRequest request, CancellationToken ct = default)
+        public async Task<ApiResponse<PreAuthResolveResponse>> ResolvePreAuthAsync(PreAuthResolveRequest request, CancellationToken ct = default)
         {
             var httpRequest = CreatePost("transaction/resolve-pre-auth", request);
             var response = await _http.SendAndReadAsync<ApiResponse<PreAuthResolveResponse>>(httpRequest, ct).ConfigureAwait(false);
-            return response?.Data;
+            return response;
         }
 
         public async Task<ApiResponse<RefundResponse>> RefundAsync(RefundCreateRequest request, CancellationToken ct = default)

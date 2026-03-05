@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Text.Json;
 using Tahsilat.NET.Abstractions;
+using Tahsilat.NET.Extensions;
 using Tahsilat.NET.Models.Common;
 using Tahsilat.NET.Models.Requests;
 using Tahsilat.NET.Sample.Models;
@@ -33,7 +34,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
+            var tahsilat = new TahsilatClient("sk_test_rwg");
 
             //1. Doğrudan Ödeme
             //var request = new PaymentCreateRequest
@@ -176,69 +177,69 @@ public class HomeController : Controller
             //};
 
             //Müşteri ile İlişkilendirilmiş Ödeme
-            //var customerRequest = new CustomerCreateRequest
-            //{
-            //    Address = "Sarıyer/İstanbul",
-            //    City = "İstanbul",
-            //    Country = "TR",
-            //    District = "Sarıyer",
-            //    Email = "muhammetgcl@yandex.com",
-            //    LastName = "SDK Test",
-            //    Name = "NET TEST",
-            //    Phone = "5434589632",
-            //    ZipCode = "34000",
-            //    Metadata = new()
-            //    {
-            //        new Dictionary<string, object>
-            //        {
-            //            ["customer_type"] = "premium",
-            //            ["special_id"] = 123456
-            //        }
-            //    }
-            //};
-
-            //var customerResponse = await tahsilat.Customers.CreateAsync(customerRequest);
-
-            //var productRequest = new ProductCreateRequest
-            //{
-            //    ProductName = "iPhone 15 Pro Max",
-            //    Price = 500000,
-            //    Description = "256GB Titanium"
-            //};
-
-            //var productResponse = await tahsilat.Products.CreateAsync(productRequest);
-
-
-            //var request = new PaymentCreateRequest
-            //{
-            //    Currency = "TRY",
-            //    Amount = 500000,
-            //    CustomerId = customerResponse.Id,
-            //    ProductIds = new List<long>
-            //    {
-            //        productResponse.Id
-            //    },
-            //    RedirectUrl = $"{Request.Scheme}://{Request.Host}/Home/PaymentResult"
-            //};
-
-            //var response = await tahsilat.Payments.CreateAsync(request);
-
-            //Doğrudan Ödeme
-            var request = new PaymentCreateRequest
+            var customerRequest = new CustomerCreateRequest
             {
-                Currency = "TRY",
-                Amount = 1000,
+                Address = "Sarıyer/İstanbul",
+                City = "İstanbul",
+                Country = "TR",
+                District = "Sarıyer",
+                Email = "muhammetgcl@yandex.com",
+                LastName = "SDK Test",
+                Name = "NET TEST",
+                Phone = "5434589632",
+                ZipCode = "34000",
                 Metadata = new()
                 {
                     new Dictionary<string, object>
                     {
-                        ["order_id"] = 123456,
-                        ["customer_type"] = "premium"
+                        ["customer_type"] = "premium",
+                        ["special_id"] = 123456
                     }
                 }
             };
 
+            var customerResponse = await tahsilat.Customers.CreateAsync(customerRequest);
+
+            var productRequest = new ProductCreateRequest
+            {
+                ProductName = "iPhone 15 Pro Max",
+                Price = 500000,
+                Description = "256GB Titanium"
+            };
+
+            var productResponse = await tahsilat.Products.CreateAsync(productRequest);
+
+
+            var request = new PaymentCreateRequest
+            {
+                Currency = "TRY",
+                Amount = 500000,
+                CustomerId = customerResponse.Id,
+                ProductIds = new List<long>
+                {
+                    productResponse.Id
+                },
+                RedirectUrl = $"{Request.Scheme}://{Request.Host}/Home/PaymentResult"
+            };
+
             var response = await tahsilat.Payments.CreateAsync(request);
+
+            //Doğrudan Ödeme
+            //var request = new PaymentCreateRequest
+            //{
+            //    Currency = "TRY",
+            //    Amount = 1000,
+            //    Metadata = new()
+            //    {
+            //        new Dictionary<string, object>
+            //        {
+            //            ["order_id"] = 123456,
+            //            ["customer_type"] = "premium"
+            //        }
+            //    }
+            //};
+
+            //var response = await tahsilat.Payments.CreateAsync(request);
 
 
             if (!string.IsNullOrEmpty(response.PaymentPageUrl))
@@ -263,13 +264,13 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
+            var tahsilat = new TahsilatClient("sk_test_rwg");
             var transaction = await tahsilat.Transactions.RetrieveAsync(transactionId);
 
             ViewBag.TransactionId = transactionId;
             ViewBag.Transaction = transaction;
 
-            if (transaction.PaymentStatus == 1)
+            if (transaction.IsSuccess())
             {
                 ViewBag.Success = true;
             }
@@ -292,10 +293,10 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
+            var tahsilat = new TahsilatClient("sk_test_rwg");
             var transaction = await tahsilat.Transactions.RetrieveAsync(transaction_id.Value);
 
-            if (transaction.PaymentStatus == 1) // 1 = Success
+            if (transaction.IsSuccess())
             {
                 ViewBag.Success = true;
                 ViewBag.Message = $"Payment Successful! Ref: {transaction.TransactionId}";
@@ -340,7 +341,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
+            var tahsilat = new TahsilatClient("sk_test_rwg");
             var result = await tahsilat.BinLookup.DetailAsync(binNumber);
             ViewBag.Result = result;
         }
@@ -364,7 +365,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
+            var tahsilat = new TahsilatClient("sk_test_rwg");
             //var request = new CommissionSearchRequest { BinNumber = binNumber };
             //var result = await tahsilat.Commissions.SearchAsync(request);
             var result = await tahsilat.Commissions.SearchAsync();
@@ -392,7 +393,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
+            var tahsilat = new TahsilatClient("sk_test_rwg");
             var result = await tahsilat.Products.CreateAsync(model);
             ViewBag.Result = result;
         }
@@ -415,7 +416,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
+            var tahsilat = new TahsilatClient("sk_test_rwg");
             var result = await tahsilat.Customers.CreateAsync(model);
             ViewBag.Result = result;
         }
@@ -438,7 +439,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
+            var tahsilat = new TahsilatClient("sk_test_rwg");
             var request = new PreAuthResolveRequest
             {
                 TransactionId = transactionId,
@@ -466,7 +467,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
+            var tahsilat = new TahsilatClient("sk_test_rwg");
             var result = await tahsilat.Transactions.RefundAsync(model);
             ViewBag.Result = result;
         }
@@ -489,7 +490,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("SK_TEST_YOUR_TEST_KEY");
+            var tahsilat = new TahsilatClient("sk_test_rwg");
             var result = await tahsilat.Transactions.RetrieveAsync(transactionId);
             ViewBag.Result = result;
         }
