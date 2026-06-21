@@ -65,5 +65,16 @@ namespace Tahsilat.NET.Models.Responses
 
         [JsonProperty("formatted_amount")]
         public string FormattedAmount { get; set; }
+
+        [JsonProperty("charged_amount")]
+        public int? ChargedAmount { get; set; }
+
+        [JsonProperty("formatted_charged_amount")]
+        public string FormattedChargedAmount { get; set; }
+
+        public decimal GetChargedAmountDecimal()
+        {
+            return (ChargedAmount.HasValue ? ChargedAmount.Value : Amount) / 100m;
+        }
     }
 }

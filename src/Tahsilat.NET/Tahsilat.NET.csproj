@@ -7,15 +7,23 @@
 		<!-- NuGet package metadata -->
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>tahsilat-dotnet</PackageId>
-		<Version>1.0.0</Version>
+		<Version>1.0.1</Version>
 		<Authors>Tahsilat.com</Authors>
 		<Company>Tahsilat.com</Company>
 		<Product>Tahsilat.NET SDK</Product>
 		<Description>Official .NET SDK for Tahsilat.com payment gateway integration</Description>
 		<Copyright>Copyright (c) 2026 Tahsilat.com</Copyright>
-		<PackageReleaseNotes>Initial release (v1.0.0)</PackageReleaseNotes>
+		<PackageReleaseNotes> Updated v1.0.1 =>
+				- TransactionResult: added ChargedAmount, FormattedChargedAmount fields and GetChargedAmountDecimal() helper
+				- RefundResponse: rewritten to expose full refund record (id, refund_amount, status, bank_response_*, currency_code, etc.)
+				- CommissionResponse: added TransactionFee field
+				- BinLookupResponse: added CardFamilyLogoPath field
+				- CustomerResponse: added Ip, FormattedUpdatedAt fields
+				- ProductResponse: added CurrencyId, ProductImageUrl fields
+		</PackageReleaseNotes>
 		<PackageTags>tahsilat;payment;virtual-pos;pos</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageIcon>icon.png</PackageIcon>
 
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/tahsilatdev/tahsilat-dotnet</RepositoryUrl>
@@ -54,9 +62,10 @@
 		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 	</ItemGroup>
 
-	<!-- Include README in NuGet package -->
+	<!-- Include README and icon in NuGet package -->
 	<ItemGroup>
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
+		<None Include="icon.png" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
 </Project>

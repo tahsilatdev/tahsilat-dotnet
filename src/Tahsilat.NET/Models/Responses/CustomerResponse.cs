@@ -64,6 +64,12 @@ namespace Tahsilat.NET.Models.Responses
         [JsonProperty("formatted_created_at")]
         public string FormattedCreatedAt { get; set; }
 
+        [JsonProperty("formatted_updated_at")]
+        public string FormattedUpdatedAt { get; set; }
+
+        [JsonProperty("ip")]
+        public string Ip { get; set; }
+
         [JsonProperty("metadata")]
         public List<MetadataEntry> Metadata { get; set; }
 

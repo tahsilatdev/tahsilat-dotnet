@@ -16,16 +16,16 @@
         {
             var result = ViewBag.Result;
             <div class="alert alert-success">
-                <strong>Baþarýlý!</strong> Müþteri Oluþturuldu. Müþteri ID: @result.Id
+                <strong>Baï¿½arï¿½lï¿½!</strong> Mï¿½ï¿½teri Oluï¿½turuldu. Mï¿½ï¿½teri ID: @result.Id
             </div>
             <div class="card mb-3">
-                <div class="card-header bg-success text-white">Müþteri Detaylarý</div>
+                <div class="card-header bg-success text-white">Mï¿½ï¿½teri Detaylarï¿½</div>
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-4">ID</dt>
                         <dd class="col-sm-8">@result.Id</dd>
 
-                        <dt class="col-sm-4">Adý Soyadý</dt>
+                        <dt class="col-sm-4">Adï¿½ Soyadï¿½</dt>
                         <dd class="col-sm-8">@result.NameLastName</dd>
 
                         <dt class="col-sm-4">Email</dt>
@@ -34,7 +34,7 @@
                         <dt class="col-sm-4">Telefon</dt>
                         <dd class="col-sm-8">@result.PhoneCode @result.Phone</dd>
 
-                        <dt class="col-sm-4">Ülke</dt>
+                        <dt class="col-sm-4">ï¿½lke</dt>
                         <dd class="col-sm-8">
                             @result.Country
                             @if (!string.IsNullOrEmpty((string)result.CountryFlagUrl))
@@ -43,7 +43,7 @@
                             }
                         </dd>
 
-                        <dt class="col-sm-4">Þehir / Ýlçe</dt>
+                        <dt class="col-sm-4">ï¿½ehir / ï¿½lï¿½e</dt>
                         <dd class="col-sm-8">@result.City / @result.District</dd>
 
                         <dt class="col-sm-4">Adres</dt>
@@ -52,8 +52,20 @@
                         <dt class="col-sm-4">Posta Kodu</dt>
                         <dd class="col-sm-8">@result.ZipCode</dd>
 
-                        <dt class="col-sm-4">Oluþturulma Tarihi</dt>
+                        <dt class="col-sm-4">OluÅŸturulma Tarihi</dt>
                         <dd class="col-sm-8">@result.FormattedCreatedAt</dd>
+
+                        @if (!string.IsNullOrEmpty((string)result.FormattedUpdatedAt))
+                        {
+                            <dt class="col-sm-4">GÃ¼ncellenme Tarihi</dt>
+                            <dd class="col-sm-8">@result.FormattedUpdatedAt</dd>
+                        }
+
+                        @if (!string.IsNullOrEmpty((string)result.Ip))
+                        {
+                            <dt class="col-sm-4">IP</dt>
+                            <dd class="col-sm-8">@result.Ip</dd>
+                        }
                     </dl>
                 </div>
             </div>

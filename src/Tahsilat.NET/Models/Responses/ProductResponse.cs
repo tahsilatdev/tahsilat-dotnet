@@ -34,6 +34,12 @@ namespace Tahsilat.NET.Models.Responses
         [JsonProperty("product_image")]
         public string ProductImage { get; set; }
 
+        [JsonProperty("product_image_url")]
+        public string ProductImageUrl { get; set; }
+
+        [JsonProperty("currency_id")]
+        public int? CurrencyId { get; set; }
+
         [JsonProperty("created_at")]
         public string CreatedAt { get; set; }
 

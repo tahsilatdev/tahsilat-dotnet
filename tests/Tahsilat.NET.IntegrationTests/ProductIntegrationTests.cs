@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,7 +14,7 @@ namespace Tahsilat.NET.IntegrationTests
         public async Task CreateProduct_ShouldReturnProduct()
         {
             var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-            
+
             var req = new ProductCreateRequest
             {
                 ProductName = "Test Product",
@@ -39,6 +39,15 @@ namespace Tahsilat.NET.IntegrationTests
 
             Assert.NotNull(res);
             Assert.True(res.Id > 0);
+            Assert.False(string.IsNullOrEmpty(res.ProductName));
+
+            // currency_id opsiyonel
+            if (res.CurrencyId.HasValue)
+                Assert.True(res.CurrencyId.Value > 0);
+
+            // product_image_url opsiyonel — görsel yüklenmemişse null gelir
+            if (!string.IsNullOrEmpty(res.ProductImageUrl))
+                Assert.True(res.ProductImageUrl.Length > 0);
         }
     }
 }

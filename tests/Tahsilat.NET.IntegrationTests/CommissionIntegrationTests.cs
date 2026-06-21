@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,6 +23,14 @@ namespace Tahsilat.NET.IntegrationTests
 
             Assert.NotNull(res);
             Assert.True(res.Count > 0);
+
+            var first = res.First();
+            Assert.True(first.Id > 0);
+            Assert.True(first.CommissionRate >= 0);
+
+            // transaction_fee opsiyonel — varsa negatif olmamalı
+            if (first.TransactionFee.HasValue)
+                Assert.True(first.TransactionFee.Value >= 0);
         }
     }
 }

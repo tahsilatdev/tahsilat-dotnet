@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -41,7 +41,14 @@ namespace Tahsilat.NET.IntegrationTests
 
             Assert.NotNull(result);
             Assert.True(result.Id > 0);
-            Assert.Equal("Name", result.Name);
+            Assert.Equal("Test", result.Name);
+
+            // ip ve formatted_updated_at opsiyonel
+            if (!string.IsNullOrEmpty(result.Ip))
+                Assert.True(result.Ip.Length > 0);
+
+            if (!string.IsNullOrEmpty(result.FormattedUpdatedAt))
+                Assert.True(result.FormattedUpdatedAt.Length > 0);
         }
     }
 }

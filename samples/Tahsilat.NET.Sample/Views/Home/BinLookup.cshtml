@@ -56,6 +56,14 @@
                                 <img src="@result.CardBrandImageUrl" alt="@result.CardBrand" style="max-height: 24px; margin-left: 8px;" />
                             }
                         </dd>
+
+                        @if (!string.IsNullOrEmpty((string)result.CardFamilyLogoPath))
+                        {
+                            <dt class="col-sm-4">Sadakat Programı</dt>
+                            <dd class="col-sm-8">
+                                <img src="@result.CardFamilyLogoPath" alt="card family" style="max-height: 24px;" />
+                            </dd>
+                        }
                     </dl>
                 </div>
             </div>

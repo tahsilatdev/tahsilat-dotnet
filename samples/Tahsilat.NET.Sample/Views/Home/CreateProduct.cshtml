@@ -14,9 +14,20 @@
         }
         @if (ViewBag.Result != null)
         {
+            var res = ViewBag.Result;
             <div class="alert alert-success">
-                <strong>Success!</strong> Product Created with ID: @ViewBag.Result.Id
+                <strong>Success!</strong> Product Created with ID: @res.Id
             </div>
+            @if (!string.IsNullOrEmpty((string)res.ProductImageUrl))
+            {
+                <div class="mb-3">
+                    <img src="@res.ProductImageUrl" alt="@res.ProductName" style="max-height: 120px;" />
+                </div>
+            }
+            @if (res.CurrencyId != null)
+            {
+                <p class="text-muted">Para Birimi ID: @res.CurrencyId (@res.CurrencyCode)</p>
+            }
             <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
         }
         <form asp-action="CreateProduct" method="post">

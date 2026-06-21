@@ -34,6 +34,9 @@ namespace Tahsilat.NET.Models.Responses
         [JsonProperty("card_family")]
         public CardFamilyInfo CardFamily { get; set; }
 
+        [JsonProperty("transaction_fee")]
+        public int? TransactionFee { get; set; }
+
         [JsonProperty("card_segment_type")]
         public CardSegmentTypeInfo CardSegmentType { get; set; }
     }

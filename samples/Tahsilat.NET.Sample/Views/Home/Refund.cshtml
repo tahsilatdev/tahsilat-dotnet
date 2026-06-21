@@ -17,11 +17,58 @@
 
         @if (ViewBag.Result != null)
         {
+            var res = ViewBag.Result;
             <div class="alert alert-success">
-                <strong>Status:</strong> @ViewBag.Result.Status <br />
-                <strong>Message:</strong> @ViewBag.Result.Message
+                <strong>Status:</strong> @res.Status <br />
+                <strong>Message:</strong> @res.Message
             </div>
-            <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
+            @if (res.Data != null)
+            {
+                var d = res.Data;
+                <div class="card mb-3">
+                    <div class="card-header bg-warning text-dark">İade Detayları</div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">İade ID</dt>
+                            <dd class="col-sm-7">@d.Id</dd>
+
+                            <dt class="col-sm-5">İade Tutarı</dt>
+                            <dd class="col-sm-7">@d.FormattedRefundAmount (@d.CurrencyCode)</dd>
+
+                            <dt class="col-sm-5">Karta İade Edilen</dt>
+                            <dd class="col-sm-7">@d.RefundChargedAmount</dd>
+
+                            <dt class="col-sm-5">Durum</dt>
+                            <dd class="col-sm-7">@d.StatusText</dd>
+
+                            @if (d.RejectReason != null)
+                            {
+                                <dt class="col-sm-5">Red Nedeni</dt>
+                                <dd class="col-sm-7">@d.RejectReason</dd>
+                            }
+
+                            <dt class="col-sm-5">Banka Referans Kodu</dt>
+                            <dd class="col-sm-7">@d.ReferenceCode</dd>
+
+                            <dt class="col-sm-5">Banka Yanıt Kodu</dt>
+                            <dd class="col-sm-7">@d.BankResponseCode</dd>
+
+                            <dt class="col-sm-5">Banka Yanıt Mesajı</dt>
+                            <dd class="col-sm-7">@d.BankResponseMessage</dd>
+
+                            <dt class="col-sm-5">İade Tarihi</dt>
+                            <dd class="col-sm-7">@d.FormattedRefundDate</dd>
+
+                            <dt class="col-sm-5">İade Tipi</dt>
+                            <dd class="col-sm-7">@d.RefundTypeText</dd>
+                        </dl>
+                    </div>
+                </div>
+            }
+            <details>
+                <summary>Raw JSON Response</summary>
+                <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </details>
         }
 
         <form asp-action="Refund" method="post">

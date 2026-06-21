@@ -30,5 +30,8 @@ namespace Tahsilat.NET.Models.Responses
 
         [JsonProperty("card_type")]
         public string CardType { get; set; }
+
+        [JsonProperty("card_family_logo_path")]
+        public string CardFamilyLogoPath { get; set; }
     }
 }

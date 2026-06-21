@@ -44,6 +44,7 @@
                             <tr>
                                 <th>Taksit Sayısı</th>
                                 <th>Komisyon Oranı (%)</th>
+                                <th>İşlem Ücreti</th>
                                 @if (ViewBag.Price != null)
                                 {
                                     <th>Tahmini Toplam Tutar</th>
@@ -58,6 +59,7 @@
                                     <tr>
                                         <td>@(((item.Installment == 1) ? "Tek Çekim" : item.Installment + " Taksit"))</td>
                                         <td>@item.CommissionRate</td>
+                                        <td>@(item.TransactionFee.HasValue ? (item.TransactionFee.Value / 100m).ToString("N2") + " TL" : "-")</td>
                                         @if (ViewBag.Price != null)
                                         {
                                             decimal price = (decimal)ViewBag.Price;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,7 +20,11 @@ namespace Tahsilat.NET.IntegrationTests
 
             Assert.NotNull(res);
             Assert.Equal(bin_number, res.BinNumber);
+            Assert.False(string.IsNullOrEmpty(res.BankName));
 
+            // card_family_logo_path opsiyonel — sadakat programı olmayan kartlarda null gelebilir
+            if (!string.IsNullOrEmpty(res.CardFamilyLogoPath))
+                Assert.True(res.CardFamilyLogoPath.Length > 0);
         }
     }
 }

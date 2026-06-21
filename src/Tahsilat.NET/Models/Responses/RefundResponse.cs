@@ -1,28 +1,82 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Tahsilat.NET.Models.Enums;
+using Newtonsoft.Json;
 
 namespace Tahsilat.NET.Models.Responses
 {
     public class RefundResponse
     {
+        [JsonProperty("id")]
+        public int? Id { get; set; }
+
+        [JsonProperty("payment_transaction_id")]
+        public int? PaymentTransactionId { get; set; }
+
+        [JsonProperty("merchant_id")]
+        public int? MerchantId { get; set; }
+
+        [JsonProperty("company_pos_credential_id")]
+        public int? CompanyPosCredentialId { get; set; }
+
+        [JsonProperty("prev_payment_status")]
+        public int? PrevPaymentStatus { get; set; }
+
+        [JsonProperty("prev_transaction_status")]
+        public int? PrevTransactionStatus { get; set; }
+
+        [JsonProperty("refund_amount")]
+        public int? RefundAmount { get; set; }
+
+        [JsonProperty("formatted_refund_amount")]
+        public string FormattedRefundAmount { get; set; }
+
+        [JsonProperty("commission_rate")]
+        public double? CommissionRate { get; set; }
+
+        [JsonProperty("company_refund_loss")]
+        public int? CompanyRefundLoss { get; set; }
+
+        [JsonProperty("platform_profit")]
+        public int? PlatformProfit { get; set; }
+
+        [JsonProperty("refund_charged_amount")]
+        public int? RefundChargedAmount { get; set; }
+
         [JsonProperty("status")]
-        public bool Status { get; set; }
+        public int? Status { get; set; }
 
-        [JsonProperty("message")]
-        public string Message { get; set; }
+        [JsonProperty("status_text")]
+        public string StatusText { get; set; }
 
-        [JsonProperty("errors")]
-        public object Errors { get; set; }
+        [JsonProperty("reject_reason")]
+        public string RejectReason { get; set; }
 
-        [JsonProperty("error_code")]
-        public string Error_code { get; set; }
+        [JsonProperty("refund_type")]
+        public int? RefundType { get; set; }
 
-        [JsonProperty("data")]
-        public object? Data { get; set; }
+        [JsonProperty("refund_type_text")]
+        public string RefundTypeText { get; set; }
+
+        [JsonProperty("reference_code")]
+        public string ReferenceCode { get; set; }
+
+        [JsonProperty("bank_response_code")]
+        public string BankResponseCode { get; set; }
+
+        [JsonProperty("bank_response_message")]
+        public string BankResponseMessage { get; set; }
+
+        [JsonProperty("bank_response_receive_at")]
+        public string BankResponseReceiveAt { get; set; }
+
+        [JsonProperty("created_at")]
+        public string CreatedAt { get; set; }
+
+        [JsonProperty("updated_at")]
+        public string UpdatedAt { get; set; }
+
+        [JsonProperty("formatted_refund_date")]
+        public string FormattedRefundDate { get; set; }
+
+        [JsonProperty("currency_code")]
+        public string CurrencyCode { get; set; }
     }
 }

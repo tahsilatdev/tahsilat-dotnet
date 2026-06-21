@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,6 +19,18 @@ namespace Tahsilat.NET.IntegrationTests
 
             Assert.NotNull(result);
             Assert.Equal(exampleTrxId, result.TransactionId);
+            Assert.True(result.Amount > 0);
+
+            // charged_amount: komisyon müşteriye yansımadıysa null gelebilir
+            if (result.ChargedAmount.HasValue)
+            {
+                Assert.True(result.ChargedAmount.Value >= 0);
+                Assert.False(string.IsNullOrEmpty(result.FormattedChargedAmount));
+            }
+
+            // helper: charged_amount varsa onu, yoksa amount'u döner
+            var decimal_ = result.GetChargedAmountDecimal();
+            Assert.True(decimal_ > 0);
         }
     }
 }

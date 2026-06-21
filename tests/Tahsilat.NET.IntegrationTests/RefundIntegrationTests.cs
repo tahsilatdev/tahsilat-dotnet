@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -28,6 +28,16 @@ namespace Tahsilat.NET.IntegrationTests
 
             Assert.NotNull(response);
             Assert.True(response.Status);
+
+            // iade kaydı data içinde dönüyor
+            var data = response.Data;
+            Assert.NotNull(data);
+            Assert.True(data.Id.HasValue);
+            Assert.True(data.RefundAmount.HasValue);
+            Assert.False(string.IsNullOrEmpty(data.CurrencyCode));
+
+            if (!string.IsNullOrEmpty(data.StatusText))
+                Assert.False(string.IsNullOrEmpty(data.StatusText));
         }
     }
 }

@@ -35,7 +35,13 @@
                         <dd class="col-sm-8">@result.TransactionId</dd>
 
                         <dt class="col-sm-4">Tutar</dt>
-                        <dd class="col-sm-8">@result.FormattedAmount @result.CurrencyCode </dd>
+                        <dd class="col-sm-8">@result.FormattedAmount @result.CurrencyCode</dd>
+
+                        @if (result.ChargedAmount != null)
+                        {
+                            <dt class="col-sm-4">Çekilen Tutar</dt>
+                            <dd class="col-sm-8">@result.FormattedChargedAmount @result.CurrencyCode</dd>
+                        }
 
                         <dt class="col-sm-4">Taksit Sayısı</dt>
                         <dd class="col-sm-8">@result.InstallmentCount</dd>
