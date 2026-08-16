@@ -6,7 +6,6 @@ namespace Tahsilat.NET.Abstractions
     {
         IPaymentService Payments { get; }
         ITransactionService Transactions { get; }
-        IRefundService Refunds { get; }
         ICustomerService Customers { get; }
         IProductService Products { get; }
         IBinLookupService BinLookup { get; }

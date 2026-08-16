@@ -1,10 +1,13 @@
 @using System.Text.Json
 @model Tahsilat.NET.Models.Requests.ProductCreateRequest
 @{
-    ViewData["Title"] = "Create Product";
+    ViewData["Title"] = "Ürün Oluşturma";
 }
-<h2>Create Product</h2>
-<div class="row">
+<div class="text-center">
+    <h1 class="display-4">Ürün Oluşturma</h1>
+    <p>Ödeme isteklerinde kullanabileceğiniz kayıtlı ürünler oluşturun.</p>
+</div>
+<div class="row justify-content-center">
     <div class="col-md-6">
         @if (ViewBag.Error != null)
         {
@@ -16,35 +19,55 @@
         {
             var res = ViewBag.Result;
             <div class="alert alert-success">
-                <strong>Success!</strong> Product Created with ID: @res.Id
+                <strong>Başarılı!</strong> Ürün oluşturuldu. Ürün ID: @res.Id
             </div>
-            @if (!string.IsNullOrEmpty((string)res.ProductImageUrl))
-            {
-                <div class="mb-3">
-                    <img src="@res.ProductImageUrl" alt="@res.ProductName" style="max-height: 120px;" />
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">Ürün Detayları</div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty((string)res.ProductImageUrl))
+                    {
+                        <div class="text-center mb-3">
+                            <img src="@res.ProductImageUrl" alt="@res.ProductName" style="max-height: 120px;" />
+                        </div>
+                    }
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">ID</dt>
+                        <dd class="col-sm-8">@res.Id</dd>
+
+                        <dt class="col-sm-4">Ürün Adı</dt>
+                        <dd class="col-sm-8">@res.ProductName</dd>
+
+                        <dt class="col-sm-4">Fiyat</dt>
+                        <dd class="col-sm-8">@res.FormattedPrice @res.CurrencyCode</dd>
+
+                        <dt class="col-sm-4">Açıklama</dt>
+                        <dd class="col-sm-8">@res.Description</dd>
+
+                        <dt class="col-sm-4">Oluşturulma Tarihi</dt>
+                        <dd class="col-sm-8">@res.FormattedCreatedAt</dd>
+                    </dl>
                 </div>
-            }
-            @if (res.CurrencyId != null)
-            {
-                <p class="text-muted">Para Birimi ID: @res.CurrencyId (@res.CurrencyCode)</p>
-            }
-            <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </div>
+            <details>
+                <summary>Raw JSON Response</summary>
+                <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </details>
         }
         <form asp-action="CreateProduct" method="post">
             <div class="mb-3">
-                <label asp-for="ProductName" class="form-label">Product Name</label>
+                <label asp-for="ProductName" class="form-label">Ürün Adı</label>
                 <input asp-for="ProductName" class="form-control">
             </div>
             <div class="mb-3">
-                <label asp-for="Price" class="form-label">Price</label>
+                <label asp-for="Price" class="form-label">Fiyat</label>
                 <input asp-for="Price" type="number" class="form-control">
-                <small class="text-muted">Örn: 75900 = 759.00 TL</small>
+                <small class="text-muted">Kuruş cinsinden — örn: 75900 = 759,00 TL</small>
             </div>
             <div class="mb-3">
-                <label asp-for="Description" class="form-label">Description</label>
+                <label asp-for="Description" class="form-label">Açıklama</label>
                 <textarea asp-for="Description" class="form-control" rows="3"></textarea>
             </div>
-            <button type="submit" class="btn btn-success">Create Product</button>
+            <button type="submit" class="btn btn-success w-100">Ürün Oluştur</button>
         </form>
     </div>
 </div>

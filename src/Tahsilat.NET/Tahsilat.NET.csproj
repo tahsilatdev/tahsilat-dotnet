@@ -7,13 +7,23 @@
 		<!-- NuGet package metadata -->
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>tahsilat-dotnet</PackageId>
-		<Version>1.0.1</Version>
+		<Version>1.1.0</Version>
 		<Authors>Tahsilat.com</Authors>
 		<Company>Tahsilat.com</Company>
 		<Product>Tahsilat.NET SDK</Product>
 		<Description>Official .NET SDK for Tahsilat.com payment gateway integration</Description>
 		<Copyright>Copyright (c) 2026 Tahsilat.com</Copyright>
-		<PackageReleaseNotes> Updated v1.0.1 =>
+		<PackageReleaseNotes> Updated v1.1.0 =>
+				- BREAKING: removed the unused RefundService and the TahsilatClient.Refunds property. Refunds now have a single entry point: Transactions.RefundAsync(request) / Transactions.Refund(request)
+				- RefundCreateRequest.Amount is now nullable (int?). Leave it null to refund the full transaction amount; provide a value (in kurus, min 100) for a partial refund
+				- Documented that the refund endpoint never populates the response Data field (it is always null). Read the outcome from Status and Message; a bank rejection returns Status false instead of an HTTP error
+				- PaymentCreateRequest.RedirectUrl is now string? to match its optional semantics. If omitted, the customer is redirected to Tahsilat's own payment result page instead of your site
+				- BREAKING: CommissionResponse.CompanyPosCredentialId is now nullable (long?). Use ?? 0 or .Value where you previously assigned it to a long
+				- CommissionResponse: added the card dimension fields that make each rate unique - PosId, PosName, CardType, IsOnUs, IsForeign - plus the previously missing InstallmentText. A row is now identified by Installment + CardType + IsOnUs + IsForeign
+				- CardType is null when the rate applies to all card types; IsOnUs is null when it applies both to on-us and not-on-us transactions. Compare CardType against the new Tahsilat.NET.Models.Common.CardTypes constants (Credit/Debit/Prepaid)
+				- BEHAVIOUR: Commissions.SearchAsync() without a BinNumber now returns the rates of every active POS of the merchant instead of the primary POS only, so the same Installment can appear on multiple rows. Use PosName/PosId to tell them apart
+
+			Updated v1.0.1 =>
 				- TransactionResult: added ChargedAmount, FormattedChargedAmount fields and GetChargedAmountDecimal() helper
 				- RefundResponse: rewritten to expose full refund record (id, refund_amount, status, bank_response_*, currency_code, etc.)
 				- CommissionResponse: added TransactionFee field

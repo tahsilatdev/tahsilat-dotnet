@@ -5,7 +5,7 @@
 }
 <div class="text-center">
     <h1 class="display-4">İşlem Sonucu Sorgulama</h1>
-    <p>İşlem numaranısı girerek daha önce ki işlemlerinizin detaylarına erişebilirsiniz..</p>
+    <p>İşlem numaranızı girerek daha önceki işlemlerinizin detaylarına erişebilirsiniz.</p>
 </div>
 <div class="row justify-content-center">
     <div class="col-md-6">
@@ -46,14 +46,37 @@
                         <dt class="col-sm-4">Taksit Sayısı</dt>
                         <dd class="col-sm-8">@result.InstallmentCount</dd>
 
+                        <dt class="col-sm-4">Ödeme Yöntemi</dt>
+                        <dd class="col-sm-8">@result.PaymentMethodText</dd>
+
                         <dt class="col-sm-4">Ödeme Durumu</dt>
-                        <dd class="col-sm-8">@result.PaymentStatusText</dd>
+                        <dd class="col-sm-8">
+                            @{
+                                // 1 = başarılı, 2 = başarısız, 3 = tamamlanmadı
+                                var payClass = ((int)result.PaymentStatus) switch
+                                {
+                                    1 => "bg-success",
+                                    2 => "bg-danger",
+                                    _ => "bg-warning text-dark"
+                                };
+                            }
+                            <span class="badge @payClass">@result.PaymentStatusText</span>
+                        </dd>
 
                         <dt class="col-sm-4">İşlem Durumu</dt>
-                        <dd class="col-sm-8">@result.TransactionStatusText</dd>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-secondary">@result.TransactionStatusText</span>
+                            @if (result.PreAuth == true)
+                            {
+                                <span class="badge bg-info text-dark ms-1">Ön Provizyon</span>
+                            }
+                        </dd>
 
                         <dt class="col-sm-4">İşlem Sonucu</dt>
                         <dd class="col-sm-8">@result.TransactionMessage</dd>
+
+                        <dt class="col-sm-4">İşlem Tarihi</dt>
+                        <dd class="col-sm-8">@result.CreatedAt</dd>
                     </dl>
                 </div>
             </div>

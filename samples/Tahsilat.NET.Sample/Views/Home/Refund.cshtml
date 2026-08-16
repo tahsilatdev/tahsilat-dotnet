@@ -1,12 +1,15 @@
 @using System.Text.Json
 @model Tahsilat.NET.Models.Requests.RefundCreateRequest
 @{
-    ViewData["Title"] = "Refund Transaction";
+    ViewData["Title"] = "İade Talebi Oluşturma";
 }
 
-<h2>Refund Transaction</h2>
+<div class="text-center">
+    <h1 class="display-4">İade Talebi Oluşturma</h1>
+    <p>İşlem numarasını girerek tam ya da kısmi iade talebi oluşturabilirsiniz.</p>
+</div>
 
-<div class="row">
+<div class="row justify-content-center">
     <div class="col-md-6">
         @if (ViewBag.Error != null)
         {
@@ -18,51 +21,28 @@
         @if (ViewBag.Result != null)
         {
             var res = ViewBag.Result;
-            <div class="alert alert-success">
-                <strong>Status:</strong> @res.Status <br />
-                <strong>Message:</strong> @res.Message
-            </div>
-            @if (res.Data != null)
-            {
-                var d = res.Data;
-                <div class="card mb-3">
-                    <div class="card-header bg-warning text-dark">İade Detayları</div>
-                    <div class="card-body">
-                        <dl class="row mb-0">
-                            <dt class="col-sm-5">İade ID</dt>
-                            <dd class="col-sm-7">@d.Id</dd>
+            bool ok = res.Status == true;
 
-                            <dt class="col-sm-5">İade Tutarı</dt>
-                            <dd class="col-sm-7">@d.FormattedRefundAmount (@d.CurrencyCode)</dd>
-
-                            <dt class="col-sm-5">Karta İade Edilen</dt>
-                            <dd class="col-sm-7">@d.RefundChargedAmount</dd>
-
-                            <dt class="col-sm-5">Durum</dt>
-                            <dd class="col-sm-7">@d.StatusText</dd>
-
-                            @if (d.RejectReason != null)
-                            {
-                                <dt class="col-sm-5">Red Nedeni</dt>
-                                <dd class="col-sm-7">@d.RejectReason</dd>
-                            }
-
-                            <dt class="col-sm-5">Banka Referans Kodu</dt>
-                            <dd class="col-sm-7">@d.ReferenceCode</dd>
-
-                            <dt class="col-sm-5">Banka Yanıt Kodu</dt>
-                            <dd class="col-sm-7">@d.BankResponseCode</dd>
-
-                            <dt class="col-sm-5">Banka Yanıt Mesajı</dt>
-                            <dd class="col-sm-7">@d.BankResponseMessage</dd>
-
-                            <dt class="col-sm-5">İade Tarihi</dt>
-                            <dd class="col-sm-7">@d.FormattedRefundDate</dd>
-
-                            <dt class="col-sm-5">İade Tipi</dt>
-                            <dd class="col-sm-7">@d.RefundTypeText</dd>
-                        </dl>
+            <div class="alert @(ok ? "alert-success" : "alert-danger")">
+                <strong>@(ok ? "İade talebi kabul edildi" : "İade talebi reddedildi")</strong>
+                @if (!string.IsNullOrEmpty((string)res.Message))
+                {
+                    <div class="mt-1">@res.Message</div>
+                }
+                @if (!ok)
+                {
+                    <div class="mt-1">
+                        <small>Banka reddettiğinde iade beklemede kalır ve tekrar denenebilir.</small>
                     </div>
+                }
+            </div>
+            @if (ok)
+            {
+                <div class="alert alert-info">
+                    İade endpoint'i yanıtta <code>Data</code> alanını doldurmaz. İade kaydının
+                    güncel durumunu görmek için
+                    <a asp-action="TransactionResult">İşlem Sonucu Sorgulama</a>
+                    sayfasından aynı işlem numarasını sorgulayın.
                 </div>
             }
             <details>
@@ -73,19 +53,24 @@
 
         <form asp-action="Refund" method="post">
             <div class="mb-3">
-                <label for="transactionId" class="form-label">Transaction ID</label>
-                <input type="number" class="form-control" name="transactionId">
+                <label for="transactionId" class="form-label">İşlem Numarası</label>
+                <input type="number" class="form-control" id="transactionId" name="transactionId"
+                       placeholder="Örn: 78810412652494">
             </div>
             <div class="mb-3">
-                <label for="amount" class="form-label">Amount</label>
-                <input type="number" class="form-control" name="amount">
-                <small class="text-muted">Örn: 1000 = 10.00 TL</small>
+                <label for="amount" class="form-label">Tutar <span class="text-muted">(opsiyonel)</span></label>
+                <input type="number" class="form-control" id="amount" name="amount">
+                <small class="text-muted">
+                    Kısmi iade için kuruş cinsinden tutar girin (örn: 1000 = 10.00 TL, min 100).
+                    <strong>Boş bırakırsanız işlem tutarının tamamı iade edilir.</strong>
+                </small>
             </div>
             <div class="mb-3">
-                <label for="description" class="form-label">Description</label>
-                <textarea class="form-control" name="description" rows="3"></textarea>
+                <label for="description" class="form-label">Açıklama</label>
+                <textarea class="form-control" id="description" name="description" rows="3"
+                          placeholder="En fazla 255 karakter"></textarea>
             </div>
-            <button type="submit" class="btn btn-warning">Process Refund</button>
+            <button type="submit" class="btn btn-warning w-100">İade Talebi Gönder</button>
         </form>
     </div>
 </div>

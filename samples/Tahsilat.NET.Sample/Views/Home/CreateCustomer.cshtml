@@ -1,10 +1,13 @@
 @using System.Text.Json
 @model Tahsilat.NET.Models.Requests.CustomerCreateRequest
 @{
-    ViewData["Title"] = "Create Customer";
+    ViewData["Title"] = "Müşteri Oluşturma";
 }
-<h2>Create Customer</h2>
-<div class="row">
+<div class="text-center">
+    <h1 class="display-4">Müşteri Oluşturma</h1>
+    <p>Ödeme isteklerinde <code>CustomerId</code> ile ilişkilendirebileceğiniz müşteri kaydı oluşturun.</p>
+</div>
+<div class="row justify-content-center">
     <div class="col-md-6">
         @if (ViewBag.Error != null)
         {
@@ -16,25 +19,25 @@
         {
             var result = ViewBag.Result;
             <div class="alert alert-success">
-                <strong>Ba�ar�l�!</strong> M��teri Olu�turuldu. M��teri ID: @result.Id
+                <strong>Başarılı!</strong> Müşteri oluşturuldu. Müşteri ID: @result.Id
             </div>
             <div class="card mb-3">
-                <div class="card-header bg-success text-white">M��teri Detaylar�</div>
+                <div class="card-header bg-success text-white">Müşteri Detayları</div>
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-4">ID</dt>
                         <dd class="col-sm-8">@result.Id</dd>
 
-                        <dt class="col-sm-4">Ad� Soyad�</dt>
+                        <dt class="col-sm-4">Adı Soyadı</dt>
                         <dd class="col-sm-8">@result.NameLastName</dd>
 
-                        <dt class="col-sm-4">Email</dt>
+                        <dt class="col-sm-4">E-posta</dt>
                         <dd class="col-sm-8">@result.Email</dd>
 
                         <dt class="col-sm-4">Telefon</dt>
                         <dd class="col-sm-8">@result.PhoneCode @result.Phone</dd>
 
-                        <dt class="col-sm-4">�lke</dt>
+                        <dt class="col-sm-4">Ülke</dt>
                         <dd class="col-sm-8">
                             @result.Country
                             @if (!string.IsNullOrEmpty((string)result.CountryFlagUrl))
@@ -43,7 +46,7 @@
                             }
                         </dd>
 
-                        <dt class="col-sm-4">�ehir / �l�e</dt>
+                        <dt class="col-sm-4">Şehir / İlçe</dt>
                         <dd class="col-sm-8">@result.City / @result.District</dd>
 
                         <dt class="col-sm-4">Adres</dt>
@@ -76,42 +79,42 @@
         }
         <form asp-action="CreateCustomer" method="post">
             <div class="mb-3">
-                <label asp-for="Name" class="form-label">First Name</label>
+                <label asp-for="Name" class="form-label">Ad</label>
                 <input asp-for="Name" class="form-control">
             </div>
             <div class="mb-3">
-                <label asp-for="LastName" class="form-label">Last Name</label>
+                <label asp-for="LastName" class="form-label">Soyad</label>
                 <input asp-for="LastName" class="form-control">
             </div>
             <div class="mb-3">
-                <label asp-for="Email" class="form-label">Email</label>
+                <label asp-for="Email" class="form-label">E-posta</label>
                 <input asp-for="Email" type="email" class="form-control">
             </div>
             <div class="mb-3">
-                <label asp-for="Phone" class="form-label">Phone</label>
+                <label asp-for="Phone" class="form-label">Telefon</label>
                 <input asp-for="Phone" class="form-control" placeholder="+905...">
             </div>
             <div class="mb-3">
-                <label asp-for="Country" class="form-label">Country Code (2-letter)</label>
+                <label asp-for="Country" class="form-label">Ülke Kodu (2 harf)</label>
                 <input asp-for="Country" class="form-control" value="TR">
             </div>
             <div class="mb-3">
-                <label asp-for="City" class="form-label">City</label>
+                <label asp-for="City" class="form-label">Şehir</label>
                 <input asp-for="City" class="form-control">
             </div>
             <div class="mb-3">
-                <label asp-for="District" class="form-label">District</label>
+                <label asp-for="District" class="form-label">İlçe</label>
                 <input asp-for="District" class="form-control">
             </div>
             <div class="mb-3">
-                <label asp-for="Address" class="form-label">Address</label>
+                <label asp-for="Address" class="form-label">Adres</label>
                 <textarea asp-for="Address" class="form-control" rows="2"></textarea>
             </div>
             <div class="mb-3">
-                <label asp-for="ZipCode" class="form-label">Zip Code</label>
+                <label asp-for="ZipCode" class="form-label">Posta Kodu</label>
                 <input asp-for="ZipCode" class="form-control">
             </div>
-            <button type="submit" class="btn btn-success">Create Customer</button>
+            <button type="submit" class="btn btn-success w-100">Müşteri Oluştur</button>
         </form>
     </div>
 </div>

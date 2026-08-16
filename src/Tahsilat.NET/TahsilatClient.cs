@@ -11,7 +11,6 @@ namespace Tahsilat.NET
     {
         public IPaymentService Payments { get; }
         public ITransactionService Transactions { get; }
-        public IRefundService Refunds { get; }
         public ICustomerService Customers { get; }
         public IProductService Products { get; }
         public IBinLookupService BinLookup { get; }
@@ -34,7 +33,6 @@ namespace Tahsilat.NET
 
             Payments = new PaymentService(_http);
             Transactions = new TransactionService(_http);
-            Refunds = new RefundService(_http);
             Customers = new CustomerService(_http);
             Products = new ProductService(_http);
             BinLookup = new BinLookupService(_http);

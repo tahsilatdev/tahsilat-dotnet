@@ -104,15 +104,22 @@ var request = new CustomerCreateRequest
 var response = await tahsilat.Customers.CreateAsync(request);
 ```
 
+Müşteri servisinin diğer metotları:
+
+```csharp
+var customer = await tahsilat.Customers.GetAsync(20585467989184);
+var results  = await tahsilat.Customers.SearchAsync("testuser");   // ada/e-postaya göre arama
+var updated  = await tahsilat.Customers.UpdateAsync(20585467989184, new CustomerUpdateRequest { City = "Ankara" });
+var deleted  = await tahsilat.Customers.DeleteAsync(20585467989184); // bool döner
+```
+
 ### Ürün Oluşturma
 ```csharp
 var request = new ProductCreateRequest
 {
     ProductName = "Test Product",
-    Price = 75900,
+    Price = 75900, // Kuruş cinsinden: 759,00 TL
     Description = "Integration Test Product",
-    StockCode = "TEST",
-    Category = "TEST",
     Metadata = new()
     {
         new Dictionary<string, object>
@@ -129,6 +136,15 @@ var request = new ProductCreateRequest
 };
 
 var response = await tahsilat.Products.CreateAsync(request);
+```
+
+Ürün servisinin diğer metotları:
+
+```csharp
+var product = await tahsilat.Products.GetAsync(55437751141488);
+var results = await tahsilat.Products.SearchAsync("Test Product");
+var updated = await tahsilat.Products.UpdateAsync(55437751141488, new ProductUpdateRequest { Price = 89900 });
+var deleted = await tahsilat.Products.DeleteAsync(55437751141488); // bool döner
 ```
 
 ### Ödeme Oluşturma
@@ -213,9 +229,109 @@ var request = new PaymentCreateRequest
 var response = await tahsilat.Payments.CreateAsync(request);
 ```
 
+#### İstek Alanları
+
+| Alan | Zorunlu | Açıklama |
+|------|---------|----------|
+| `Amount` | ✅ | Kuruş cinsinden toplam tutar (ör. `70000` = 700,00 TL) |
+| `Currency` | ✅ | ISO 4217 para birimi kodu (ör. `TRY`) |
+| `Products` | ⚠️ | Ürün listesi. `ProductIds` göndermiyorsanız zorunlu |
+| `ProductIds` | ⚠️ | Kayıtlı ürün ID'leri. `Products` göndermiyorsanız zorunlu |
+| `RedirectUrl` | ❌ | Ödeme sonrası dönülecek adres. **Boş bırakılırsa Tahsilat'ın sonuç sayfası gösterilir** |
+| `CustomerId` | ❌ | İşlemi kayıtlı bir müşteriyle ilişkilendirir |
+| `PreAuth` | ❌ | `true` ise tutar çekilmez, yalnızca bloke edilir (varsayılan `false`) |
+| `Description` | ❌ | İşlem açıklaması |
+| `Metadata` | ❌ | Raporlama için ek veri (en fazla 25 nesne) |
+
+#### Ödeme Yanıtının Kullanımı
+
+`CreateAsync` bir `PaymentResponse` döner. Müşteriyi `PaymentPageUrl` adresine yönlendirmeniz gerekir:
+
+```csharp
+var response = await tahsilat.Payments.CreateAsync(request);
+
+Console.WriteLine(response.TransactionId);   // İşlem numarası — kendi tarafınızda saklayın
+Console.WriteLine(response.PaymentPageUrl);  // Müşterinin yönlendirileceği ödeme sayfası
+Console.WriteLine(response.ExpiresAt);       // Ödeme sayfasının geçerlilik süresi
+
+// ASP.NET Core örneği
+return Redirect(response.PaymentPageUrl);
+```
+
+#### Ödeme Sonrası Yönlendirme (`RedirectUrl`)
+
+`RedirectUrl` **opsiyoneldir** ve davranışı gönderilip gönderilmemesine göre değişir:
+
+| Durum | Ödeme sonrası ne olur |
+|-------|-----------------------|
+| `RedirectUrl` **verilir** | Müşteri sizin belirttiğiniz adrese döner |
+| `RedirectUrl` **boş bırakılır / gönderilmez** | Müşteri **Tahsilat'ın kendi ödeme sonuç sayfasına** yönlendirilir |
+
+```csharp
+// Müşteri kendi sitenize döner
+var request = new PaymentCreateRequest
+{
+    Amount = 70000,
+    Currency = "TRY",
+    RedirectUrl = "https://example.com/payment/callback"
+};
+
+// RedirectUrl verilmezse müşteri Tahsilat'ın sonuç sayfasında kalır
+var request = new PaymentCreateRequest
+{
+    Amount = 70000,
+    Currency = "TRY"
+};
+```
+
+> **Dikkat:** Müşteriyi ödeme sonrasında kendi sitenize geri almak istiyorsanız `RedirectUrl` göndermek **zorundasınız**. Boş bırakırsanız akış Tahsilat'ta biter ve müşteri sitenize dönmez.
+
+> `RedirectUrl` adresi query parametresi olarak yalnızca `transaction_id` içermelidir. `null` bıraktığınızda alan istek gövdesine hiç yazılmaz.
+
+#### Ön Provizyon (Pre-Auth)
+
+`PreAuth = true` gönderirseniz tutar karttan çekilmez, yalnızca bloke edilir:
+
+```csharp
+var request = new PaymentCreateRequest
+{
+    Amount = 50000,
+    Currency = "TRY",
+    RedirectUrl = "https://example.com/payment/callback",
+    PreAuth = true
+};
+
+var response = await tahsilat.Payments.CreateAsync(request);
+```
+
+Bloke edilen tutarı sonradan **kapatmanız (capture)** veya **iptal etmeniz (void)** gerekir:
+
+```csharp
+// Provizyonu kapat — tutar tahsil edilir
+var approve = await tahsilat.Transactions.ResolvePreAuthAsync(new PreAuthResolveRequest
+{
+    TransactionId = 78810412652494,
+    Status = true
+});
+
+// Provizyonu iptal et — bloke çözülür, tahsilat yapılmaz
+var cancel = await tahsilat.Transactions.ResolvePreAuthAsync(new PreAuthResolveRequest
+{
+    TransactionId = 78810412652494,
+    Status = false
+});
+
+if (approve.Status)
+{
+    Console.WriteLine(approve.Message);
+}
+```
+
+> `ResolvePreAuthAsync` bir `ApiResponse<PreAuthResolveResponse>` döner; sonucu `Status` ve `Message` alanlarından okuyun.
+
 ### İşlem Sorgulama
 ```csharp
-var transaction = await client.Transactions.RetrieveAsync(78810412652494);
+var transaction = await tahsilat.Transactions.RetrieveAsync(78810412652494);
 
 Console.WriteLine(transaction.TransactionId);
 Console.WriteLine(transaction.PaymentStatusText); // success, fail, incomplete
@@ -238,16 +354,69 @@ if (transaction.PaymentStatus == 3) {
 
 ### İade İşlemi
 
+İade işlemlerinin tek giriş noktası `tahsilat.Transactions.RefundAsync` metodudur.
+
+#### Tam İade
+
+`Amount` alanı **opsiyoneldir**. Boş (null) bırakırsanız işlem tutarının tamamı iade edilir:
+
 ```csharp
- var request = new RefundCreateRequest
- {
-     TransactionId = 78810412652494,
-     Amount = 1000, // Kısmi iade (10.00 TL)
-     Description = "Müşteri talebi ile iade"
- };
+var request = new RefundCreateRequest
+{
+    TransactionId = 78810412652494,
+    Description = "Müşteri talebi ile iade"
+};
 
 var response = await tahsilat.Transactions.RefundAsync(request);
 ```
+
+#### Kısmi İade
+
+`Amount` alanına değer verirseniz kısmi iade yapılır. Tutar **kuruş cinsindendir**, en az `100` (1,00 TL) olmalı ve işlem tutarını aşmamalıdır:
+
+```csharp
+var request = new RefundCreateRequest
+{
+    TransactionId = 78810412652494,
+    Amount = 1000, // Kısmi iade (10.00 TL)
+    Description = "Müşteri talebi ile iade"
+};
+
+var response = await tahsilat.Transactions.RefundAsync(request);
+```
+
+| Alan | Zorunlu | Açıklama |
+|------|---------|----------|
+| `TransactionId` | ✅ | İade edilecek işlemin ID'si |
+| `Amount` | ❌ | Kuruş cinsinden iade tutarı (min `100`). **Boş bırakılırsa tam iade yapılır.** |
+| `Description` | ✅ | İade açıklaması (en fazla 255 karakter) |
+
+#### İade Yanıtının Okunması
+
+`RefundAsync`, diğer metotlardan farklı olarak **`ApiResponse<RefundResponse>`** döner. Sonucu `Status` ve `Message` alanlarından okursunuz:
+
+```csharp
+var response = await tahsilat.Transactions.RefundAsync(request);
+
+if (response.Status)
+{
+    // "İade işlemi başarıyla gerçekleştirildi ve tutar bakiyenizden düşüldü."
+    Console.WriteLine(response.Message);
+}
+else
+{
+    // Banka reddetti — iade beklemede kalır, tekrar denenebilir
+    Console.WriteLine($"İade reddedildi: {response.Message}");
+}
+```
+
+> **Önemli:** İade endpoint'i **`Data` alanını doldurmaz, her zaman `null` döner.** İade kaydının detaylarına (tutar, banka referans kodu, durum) bu yanıttan erişemezsiniz. İşlemin güncel durumunu görmek için `Transactions.RetrieveAsync(transactionId)` ile işlemi yeniden sorgulayın ya da webhook'u dinleyin.
+
+> **Önemli:** Banka iadeyi reddederse **HTTP hatası oluşmaz**; `Status` alanı `false` gelir ve sebep `Message` içinde yer alır. Bu yüzden `Status` kontrolünü atlamayın — exception beklemek yeterli değildir.
+
+> **Not:** Bir işlem üzerinde önceki iade tamamlanmadan yeni iade başlatılamaz.
+
+> **Not:** Senkron kullanım için `tahsilat.Transactions.Refund(request)` metodunu kullanabilirsiniz.
 
 ### BIN Sorgulama
 
@@ -271,6 +440,63 @@ var filtered = await tahsilat.Commissions.SearchAsync(new CommissionSearchReques
 });
 
 ```
+
+#### Yanıt Satırındaki Kart Boyutu Alanları
+
+Aynı komisyon oranı listede birden fazla kez görünebilir. Bunun sebebi, her satırın **farklı bir kart senaryosuna** ait olmasıdır. Bir satır şu kombinasyonla tekilleşir: `Installment` + `CardType` + `IsOnUs` + `IsForeign`.
+
+| Alan | Tip | Anlam |
+|------|-----|-------|
+| `CompanyPosCredentialId` | `long?` | Oranın ait olduğu POS kredensiyalinin kimliği |
+| `PosId` | `long?` | Oranın ait olduğu POS entegrasyonunun kimliği |
+| `PosName` | `string` | Oranın ait olduğu POS'un adı (ör. `Ziraat Pay Pos`) |
+| `InstallmentText` | `string` | Taksit açıklaması (ör. `Tek çekim`) |
+| `CardType` | `string` | Oranın geçerli olduğu kart türü: `credit` / `debit` / `prepaid`. **`null` = tüm kart türleri** |
+| `IsOnUs` | `bool?` | `true` = kartı çıkaran bankanın kendi POS'una (on-us) ait oran, `false` = on-us değil, **`null` = her ikisi için geçerli** |
+| `IsForeign` | `bool` | `true` = yabancı (yurt dışı) kart oranı, `false` = yerli kart |
+
+> **Dikkat:** `CardType` ve `IsOnUs` alanlarında `null` bir eksiklik değil, **anlamlı bir değerdir**. `CardType == null` "her kart türü için geçerli", `IsOnUs == null` ise "hem on-us hem not-on-us için geçerli" demektir.
+
+`CardType` karşılaştırması için `CardTypes` sabitlerini kullanabilirsiniz:
+
+```csharp
+using Tahsilat.NET.Models.Common;
+
+// Yerli kredi kartı, tek çekim oranları
+var credit = commissions
+    .Where(c => c.Installment == 1)
+    .Where(c => !c.IsForeign)
+    .Where(c => c.CardType == CardTypes.Credit || c.CardType == null)
+    .ToList();
+
+foreach (var c in credit)
+{
+    Console.WriteLine($"{c.PosName} · {c.InstallmentText} · %{c.CommissionRate}");
+}
+```
+
+> `CardTypes` sabitleri (`Credit`, `Debit`, `Prepaid`) yalnızca bilinen değerleri içerir. API ileride yeni bir kart türü ekleyebileceği için `CardType` alanını `string` olarak karşılaştırın, tüm olasılıkları kapsayan bir `switch` yazmayın.
+
+#### Çoklu POS Davranışı
+
+`BinNumber` **göndermediğiniz** istekte liste, sadece birincil POS'un değil, üye işyerinin **tüm aktif POS'larının** oranlarını döner. Bu yüzden aynı taksit sayısı birden fazla satırda görünebilir:
+
+```csharp
+var all = await tahsilat.Commissions.SearchAsync();
+
+// POS bazında grupla
+foreach (var group in all.GroupBy(c => c.PosName))
+{
+    Console.WriteLine($"--- {group.Key} ---");
+    foreach (var c in group.OrderBy(c => c.Installment))
+        Console.WriteLine($"{c.InstallmentText}: %{c.CommissionRate}");
+}
+```
+
+`BinNumber` **gönderdiğiniz** istekte ise her satır, o taksit için kazanan POS'u gösterir.
+
+> Taksit sayısına göre tek bir oran seçen mevcut kodunuz (`commissions.First(c => c.Installment == 3)` gibi) artık rastgele bir POS'un oranını dönebilir. Böyle bir yerde `PosName` / `PosId` ile filtreleme yapın.
+
 ## Hata Yönetimi
 ```csharp
 
@@ -278,10 +504,11 @@ using Tahsilat.NET.Exceptions;
 
 try
 {
-    var payment = await tahsilat.Payments.CreateAsync(new CreatePaymentRequest
+    var payment = await tahsilat.Payments.CreateAsync(new PaymentCreateRequest
     {
         Amount = 10000,
-        Currency = "TRY"
+        Currency = "TRY",
+        RedirectUrl = "https://example.com/payment/callback"
     });
 }
 catch (TahsilatAuthenticationException ex)
@@ -346,6 +573,8 @@ catch (TahsilatException ex)
 | ├─ `TahsilatNetworkException` | Ağ/bağlantı hatası | — |
 | ├─ `TahsilatApiException` | Diğer API hataları | `StatusCode` |
 | └─ `TahsilatWebhookException` | Webhook doğrulama hatası | — |
+
+> **Not:** İade endpoint'i pratikte `200, 400, 403, 404, 422, 429, 500` durum kodlarını döndürür; `402` ve `424` döndürmez. SDK'daki `TahsilatPaymentException` (402) ve `TahsilatNetworkException` (424) eşlemeleri savunma amaçlı genel eşlemelerdir ve diğer endpoint'ler için korunmaktadır.
 
 
 ## API Key Türleri

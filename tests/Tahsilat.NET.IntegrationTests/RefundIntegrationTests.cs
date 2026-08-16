@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tahsilat.NET.Infrastructure.Http;
 using Tahsilat.NET.Models.Requests;
 using Xunit;
 
@@ -29,15 +30,68 @@ namespace Tahsilat.NET.IntegrationTests
             Assert.NotNull(response);
             Assert.True(response.Status);
 
-            // iade kaydı data içinde dönüyor
-            var data = response.Data;
-            Assert.NotNull(data);
-            Assert.True(data.Id.HasValue);
-            Assert.True(data.RefundAmount.HasValue);
-            Assert.False(string.IsNullOrEmpty(data.CurrencyCode));
+            // Sonuç yalnızca status + message olarak döner.
+            // Endpoint "data" alanını doldurmaz — iade kaydının detayları için
+            // işlemi Transactions.RetrieveAsync ile yeniden sorgulamak gerekir.
+            Assert.False(string.IsNullOrEmpty(response.Message));
+            Assert.Null(response.Data);
+        }
 
-            if (!string.IsNullOrEmpty(data.StatusText))
-                Assert.False(string.IsNullOrEmpty(data.StatusText));
+        /// <summary>
+        /// Amount boş bırakıldığında (tam iade) istek gövdesine "amount" alanı
+        /// hiç yazılmamalıdır — boş string ya da 0 olarak da gönderilmemelidir.
+        /// </summary>
+        [Fact]
+        public async Task RefundRequest_WithNullAmount_ShouldNotWriteAmountToForm()
+        {
+            var req = new RefundCreateRequest
+            {
+                TransactionId = 38142216687547,
+                Description = "Tam iade işlemi."
+            };
+
+            var form = await BuildFormAsync(req);
+
+            Assert.False(form.ContainsKey("amount"));
+
+            Assert.Equal("38142216687547", form["transaction_id"]);
+            Assert.Equal("Tam iade işlemi.", form["description"]);
+        }
+
+        /// <summary>
+        /// Amount dolu olduğunda (kısmi iade) mevcut davranış korunmalı:
+        /// "amount" alanı kuruş cinsinden gövdeye yazılmalıdır.
+        /// </summary>
+        [Fact]
+        public async Task RefundRequest_WithAmount_ShouldWriteAmountToForm()
+        {
+            var req = new RefundCreateRequest
+            {
+                TransactionId = 38142216687547,
+                Amount = 3000,
+                Description = "Kısmi iade işlemi."
+            };
+
+            var form = await BuildFormAsync(req);
+
+            Assert.Equal("3000", form["amount"]);
+            Assert.Equal("38142216687547", form["transaction_id"]);
+            Assert.Equal("Kısmi iade işlemi.", form["description"]);
+        }
+
+        private static async Task<Dictionary<string, string>> BuildFormAsync(object request)
+        {
+            var content = FormUrlEncodedContentBuilder.Build(request);
+            var raw = await content.ReadAsStringAsync();
+
+            return raw
+                .Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(pair => pair.Split(new[] { '=' }, 2))
+                .ToDictionary(
+                    parts => Uri.UnescapeDataString(parts[0]),
+                    parts => parts.Length > 1
+                        ? Uri.UnescapeDataString(parts[1].Replace("+", " "))
+                        : string.Empty);
         }
     }
 }

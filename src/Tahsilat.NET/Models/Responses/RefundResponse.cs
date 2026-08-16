@@ -2,6 +2,14 @@ using Newtonsoft.Json;
 
 namespace Tahsilat.NET.Models.Responses
 {
+    /// <summary>
+    /// Refund record shape.
+    /// NOTE: POST /transaction/refund does not populate the "data" field — the
+    /// Data property of its ApiResponse is always null. Read the outcome from
+    /// Status and Message instead, and re-query the transaction with
+    /// Transactions.RetrieveAsync to see the refund reflected on it.
+    /// This type is kept so the response shape stays forward compatible.
+    /// </summary>
     public class RefundResponse
     {
         [JsonProperty("id")]

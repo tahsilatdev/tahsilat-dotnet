@@ -1,11 +1,21 @@
 @using System.Text.Json
+@using Tahsilat.NET.Models.Common
+@using Tahsilat.NET.Models.Responses
 @{
-    ViewData["Title"] = "Pre-Auth Resolve";
+    ViewData["Title"] = "Ön Provizyon Kapatma";
+
+    var result = ViewBag.Result as ApiResponse<PreAuthResolveResponse>;
 }
 
-<h2>Pre-Auth Resolve</h2>
+<div class="text-center">
+    <h1 class="display-4">Ön Provizyon Kapatma</h1>
+    <p>
+        Ön provizyonlu (<code>PreAuth = true</code>) bir işlemde tutar karttan çekilmez, yalnızca bloke edilir.
+        Buradan bloke tutarı tahsil edebilir (capture) veya iptal edebilirsiniz (void).
+    </p>
+</div>
 
-<div class="row">
+<div class="row justify-content-center">
     <div class="col-md-6">
         @if (ViewBag.Error != null)
         {
@@ -14,27 +24,40 @@
             </div>
         }
 
-        @if (ViewBag.Result != null)
+        @if (result != null)
         {
-            <div class="alert alert-success">
-                <strong>Status:</strong> @ViewBag.Result.status
+            <div class="alert @(result.Status ? "alert-success" : "alert-danger")">
+                <strong>@(result.Status ? "İşlem başarılı" : "İşlem başarısız")</strong>
+                @if (!string.IsNullOrEmpty(result.Message))
+                {
+                    <div class="mt-1">@result.Message</div>
+                }
+                @if (!string.IsNullOrEmpty(result.ErrorCode))
+                {
+                    <div class="mt-1"><small>Hata kodu: @result.ErrorCode</small></div>
+                }
             </div>
-            <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
+
+            <details class="mb-3">
+                <summary>Raw JSON Response</summary>
+                <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </details>
         }
 
         <form asp-action="PreAuthResolve" method="post">
             <div class="mb-3">
-                <label for="transactionId" class="form-label">Transaction ID</label>
-                <input type="number" class="form-control" name="transactionId">
+                <label for="transactionId" class="form-label">İşlem Numarası</label>
+                <input type="number" class="form-control" id="transactionId" name="transactionId"
+                       placeholder="Örn: 78810412652494">
             </div>
             <div class="mb-3">
-                <label for="status" class="form-label">Resolution</label>
-                <select class="form-control" name="status">
-                    <option value="true">Approve (Capture)</option>
-                    <option value="false">Cancel (Void)</option>
+                <label for="status" class="form-label">Yapılacak İşlem</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="true">Provizyonu Kapat (Capture) — tutar tahsil edilir</option>
+                    <option value="false">Provizyonu İptal Et (Void) — bloke çözülür</option>
                 </select>
             </div>
-            <button type="submit" class="btn btn-primary">Resolve</button>
+            <button type="submit" class="btn btn-primary w-100">Uygula</button>
         </form>
     </div>
 </div>

@@ -28,11 +28,13 @@ namespace Tahsilat.NET.Models.Requests
         public string? Currency { get; set; }
 
         /// <summary>
-        /// Redirect URL after 3D payment completion (optional).
+        /// Redirect URL after payment completion (optional).
+        /// If left null or empty, the customer is redirected to Tahsilat's own
+        /// payment result page instead of your site.
         /// Should only contain transaction_id as a query parameter.
         /// </summary>
         [JsonProperty("redirect_url")]
-        public string RedirectUrl { get; set; }
+        public string? RedirectUrl { get; set; }
 
         /// <summary>
         /// If true, the payment is only authorized (pre-auth), not captured.

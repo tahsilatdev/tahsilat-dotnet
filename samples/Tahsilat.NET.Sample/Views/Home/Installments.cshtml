@@ -1,22 +1,56 @@
 @using System.Text.Json
+@using Tahsilat.NET.Models.Common
 @using Tahsilat.NET.Models.Responses
 @{
     ViewData["Title"] = "Taksit Seçenekleri";
+
+    var result = ViewBag.Result as List<CommissionResponse>;
+    decimal? price = ViewBag.Price as decimal?;
+}
+
+@functions {
+    static string CardTypeLabel(string? cardType) => cardType switch
+    {
+        CardTypes.Credit => "Kredi Kartı",
+        CardTypes.Debit => "Banka Kartı",
+        CardTypes.Prepaid => "Ön Ödemeli",
+        null => "Tüm kart türleri",
+        _ => cardType
+    };
+
+    static string OnUsLabel(bool? isOnUs) => isOnUs switch
+    {
+        true => "On-Us",
+        false => "Diğer banka",
+        null => "Farketmez"
+    };
 }
 
 <div class="text-center">
     <h1 class="display-4">Taksit Seçenekleri</h1>
-    <p>Kartınızın ilk 6 hanesini girerek taksit seçeneklerini görebilirsiniz.</p>
+    <p>Kartın ilk 6-8 hanesini girerek o karta uygulanacak oranları görebilirsiniz.</p>
 </div>
 
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-11">
         <form asp-action="Installments" method="post">
             <div class="row">
-                <div class="col-md-12">
+                <div class="col-md-6">
                     <div class="form-group mb-3">
-                        <label for="binNumber">Bin Numarası</label>
-                        <input type="number" class="form-control" id="binNumber" name="binNumber" placeholder="Örn: 489455" maxlength="8" value="@Context.Request.Query["binNumber"]" />
+                        <label for="binNumber">BIN Numarası <span class="text-muted">(opsiyonel)</span></label>
+                        <input type="number" class="form-control" id="binNumber" name="binNumber"
+                               placeholder="Örn: 489455" value="@ViewBag.BinNumber" />
+                        <small class="text-muted">
+                            Boş bırakırsanız üye işyerinin <strong>tüm aktif POS'larının</strong> oranları listelenir.
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="price">Tutar (TL) <span class="text-muted">(opsiyonel)</span></label>
+                        <input type="number" step="0.01" class="form-control" id="price" name="price"
+                               placeholder="Örn: 100.00" value="@ViewBag.Price" />
+                        <small class="text-muted">Girerseniz her satır için tahmini toplam tutar hesaplanır.</small>
                     </div>
                 </div>
             </div>
@@ -30,55 +64,180 @@
             </div>
         }
 
-        @if (ViewBag.Result != null)
+        @if (result != null)
         {
-            var result = ViewBag.Result as List<CommissionResponse>;
-            
-            <div class="card mt-3">
-                <div class="card-header bg-primary text-white">
-                    Taksit Seçenekleri
-                </div>
-                <div class="card-body">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Taksit Sayısı</th>
-                                <th>Komisyon Oranı (%)</th>
-                                <th>İşlem Ücreti</th>
-                                @if (ViewBag.Price != null)
-                                {
-                                    <th>Tahmini Toplam Tutar</th>
-                                }
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (result != null)
+            var posGroups = result
+                .GroupBy(x => new { x.PosId, x.PosName })
+                .OrderBy(g => g.Key.PosName)
+                .ToList();
+
+            <div class="alert alert-info mt-3 mb-3">
+                <strong>@result.Count</strong> oran, <strong>@posGroups.Count</strong> POS üzerinden listelendi.
+                @if (ViewBag.BinNumber == null)
+                {
+                    <text>
+                        BIN girmediğiniz için tüm aktif POS'ların oranları gösteriliyor; aynı taksit sayısı
+                        birden fazla POS'ta görünebilir.
+                    </text>
+                }
+                else
+                {
+                    <text>Her satır, o taksit için kazanan POS'u gösterir.</text>
+                }
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mb-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="expandAll">Tümünü Aç</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="collapseAll">Tümünü Kapat</button>
+            </div>
+
+            <div class="accordion" id="posAccordion">
+            @{ var posIndex = 0; }
+            @foreach (var pos in posGroups)
+            {
+                posIndex++;
+                var collapseId = $"posCollapse{posIndex}";
+                var isFirst = posIndex == 1;
+                var minRate = pos.Min(x => x.CommissionRate);
+                var maxRate = pos.Max(x => x.CommissionRate);
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button @(isFirst ? "" : "collapsed")" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#@collapseId"
+                                aria-expanded="@(isFirst ? "true" : "false")" aria-controls="@collapseId">
+                            <span class="fw-bold me-2">
+                                @(string.IsNullOrEmpty(pos.Key.PosName) ? "POS bilgisi yok" : pos.Key.PosName)
+                            </span>
+                            @if (pos.Key.PosId.HasValue)
                             {
-                                foreach (var item in result.OrderBy(x => x.Installment))
+                                <span class="badge bg-secondary me-2">POS ID: @pos.Key.PosId</span>
+                            }
+                            <span class="badge bg-primary me-2">@pos.Count() oran</span>
+                            <span class="text-muted small">
+                                @(minRate == maxRate
+                                    ? $"%{minRate}"
+                                    : $"%{minRate} – %{maxRate}")
+                            </span>
+                        </button>
+                    </h2>
+                    <div id="@collapseId" class="accordion-collapse collapse @(isFirst ? "show" : "")">
+                        <div class="accordion-body p-0">
+                        <table class="table table-striped table-hover mb-0 align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Taksit</th>
+                                    <th>Kart</th>
+                                    <th>Kart Türü</th>
+                                    <th>On-Us</th>
+                                    <th>Menşei</th>
+                                    <th class="text-end">Komisyon (%)</th>
+                                    <th class="text-end">İşlem Ücreti</th>
+                                    @if (price.HasValue)
+                                    {
+                                        <th class="text-end">Tahmini Toplam</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in pos.OrderBy(x => x.Installment).ThenBy(x => x.CardType))
                                 {
                                     <tr>
-                                        <td>@(((item.Installment == 1) ? "Tek Çekim" : item.Installment + " Taksit"))</td>
-                                        <td>@item.CommissionRate</td>
-                                        <td>@(item.TransactionFee.HasValue ? (item.TransactionFee.Value / 100m).ToString("N2") + " TL" : "-")</td>
-                                        @if (ViewBag.Price != null)
+                                        <td>
+                                            @(string.IsNullOrEmpty(item.InstallmentText)
+                                                ? (item.Installment == 1 ? "Tek Çekim" : item.Installment + " Taksit")
+                                                : item.InstallmentText)
+                                        </td>
+                                        <td>
+                                            @if (item.CardFamily != null)
+                                            {
+                                                @if (!string.IsNullOrEmpty(item.CardFamily.LogoUrl))
+                                                {
+                                                    <img src="@item.CardFamily.LogoUrl" alt="@item.CardFamily.Name"
+                                                         style="height:20px" class="me-2" />
+                                                }
+                                                <span>@item.CardFamily.Name</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                            @if (item.CardSegmentType != null && !string.IsNullOrEmpty(item.CardSegmentType.Name))
+                                            {
+                                                <span class="badge bg-secondary ms-1">@item.CardSegmentType.Name</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (item.CardType == null)
+                                            {
+                                                <span class="text-muted">@CardTypeLabel(item.CardType)</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-info text-dark">@CardTypeLabel(item.CardType)</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (item.IsOnUs == null)
+                                            {
+                                                <span class="text-muted">@OnUsLabel(item.IsOnUs)</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge @(item.IsOnUs == true ? "bg-success" : "bg-secondary")">
+                                                    @OnUsLabel(item.IsOnUs)
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (item.IsForeign)
+                                            {
+                                                <span class="badge bg-warning text-dark">Yabancı</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-light text-dark">Yerli</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">@item.CommissionRate</td>
+                                        <td class="text-end">
+                                            @(item.TransactionFee.HasValue
+                                                ? (item.TransactionFee.Value / 100m).ToString("N2") + " TL"
+                                                : "-")
+                                        </td>
+                                        @if (price.HasValue)
                                         {
-                                            decimal price = (decimal)ViewBag.Price;
-                                            decimal total = price + (price * item.CommissionRate / 100);
-                                            <td>@total.ToString("C2")</td>
+                                            var total = price.Value + (price.Value * item.CommissionRate / 100);
+                                            <td class="text-end">@total.ToString("C2")</td>
                                         }
                                     </tr>
                                 }
-                            }
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
                 </div>
+            }
             </div>
-            <details>
+
+            <details class="mt-3">
                 <summary>Raw JSON Response</summary>
                 <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>
             </details>
-
         }
     </div>
 </div>
 
+@section Scripts {
+    <script>
+        document.getElementById('expandAll')?.addEventListener('click', function () {
+            document.querySelectorAll('#posAccordion .accordion-collapse')
+                .forEach(el => bootstrap.Collapse.getOrCreateInstance(el).show());
+        });
+
+        document.getElementById('collapseAll')?.addEventListener('click', function () {
+            document.querySelectorAll('#posAccordion .accordion-collapse')
+                .forEach(el => bootstrap.Collapse.getOrCreateInstance(el).hide());
+        });
+    </script>
+}

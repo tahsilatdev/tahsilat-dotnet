@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Numerics;
 using System.Text.Json;
@@ -34,7 +34,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_rwg");
+            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
 
             //1. Doğrudan Ödeme
             //var request = new PaymentCreateRequest
@@ -264,7 +264,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_rwg");
+            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
             var transaction = await tahsilat.Transactions.RetrieveAsync(transactionId);
 
             ViewBag.TransactionId = transactionId;
@@ -293,7 +293,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_rwg");
+            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
             var transaction = await tahsilat.Transactions.RetrieveAsync(transaction_id.Value);
 
             if (transaction.IsSuccess())
@@ -341,7 +341,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_rwg");
+            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
             var result = await tahsilat.BinLookup.DetailAsync(binNumber);
             ViewBag.Result = result;
         }
@@ -361,17 +361,21 @@ public class HomeController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Installments(int binNumber, decimal? price)
+    public async Task<IActionResult> Installments(int? binNumber, decimal? price)
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_rwg");
-            //var request = new CommissionSearchRequest { BinNumber = binNumber };
-            //var result = await tahsilat.Commissions.SearchAsync(request);
-            var result = await tahsilat.Commissions.SearchAsync();
+            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
+
+            // BIN verilirse o karta uygulanacak oranlar, verilmezse üye işyerinin
+            // tüm aktif POS'larının oranları döner.
+            var result = binNumber.HasValue
+                ? await tahsilat.Commissions.SearchAsync(new CommissionSearchRequest { BinNumber = binNumber })
+                : await tahsilat.Commissions.SearchAsync();
 
             ViewBag.Result = result;
             ViewBag.Price = price;
+            ViewBag.BinNumber = binNumber;
         }
         catch (Exception ex)
         {
@@ -393,7 +397,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_rwg");
+            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
             var result = await tahsilat.Products.CreateAsync(model);
             ViewBag.Result = result;
         }
@@ -416,7 +420,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_rwg");
+            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
             var result = await tahsilat.Customers.CreateAsync(model);
             ViewBag.Result = result;
         }
@@ -439,7 +443,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_rwg");
+            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
             var request = new PreAuthResolveRequest
             {
                 TransactionId = transactionId,
@@ -467,7 +471,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_rwg");
+            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
             var result = await tahsilat.Transactions.RefundAsync(model);
             ViewBag.Result = result;
         }
@@ -490,7 +494,7 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_rwg");
+            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
             var result = await tahsilat.Transactions.RetrieveAsync(transactionId);
             ViewBag.Result = result;
         }

@@ -9,14 +9,14 @@
         @if (ViewBag.Error != null)
         {
             <div class="alert alert-danger">
-                <i class="bi bi-x-circle-fill"></i> @ViewBag.Error
+                @ViewBag.Error
             </div>
         }
 
         @if (ViewBag.Success == true)
         {
             <div class="alert alert-success">
-                <i class="bi bi-check-circle-fill"></i> <strong>Ödeme Başarılı!</strong>
+                <strong>Ödeme Başarılı!</strong>
             </div>
             <div class="card">
                 <div class="card-body">
@@ -27,7 +27,7 @@
                         @if (ViewBag.Transaction != null)
                         {
                             <dt class="col-sm-5">Tutar</dt>
-                            <dd class="col-sm-7">@ViewBag.Transaction.Amount @ViewBag.Transaction.CurrencyCode</dd>
+                            <dd class="col-sm-7">@ViewBag.Transaction.FormattedAmount @ViewBag.Transaction.CurrencyCode</dd>
 
                             <dt class="col-sm-5">Ödeme Durumu</dt>
                             <dd class="col-sm-7">@ViewBag.Transaction.PaymentStatusText</dd>
