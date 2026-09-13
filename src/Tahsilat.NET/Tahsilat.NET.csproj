@@ -7,13 +7,17 @@
 		<!-- NuGet package metadata -->
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>tahsilat-dotnet</PackageId>
-		<Version>1.1.0</Version>
+		<Version>1.1.1</Version>
 		<Authors>Tahsilat.com</Authors>
 		<Company>Tahsilat.com</Company>
 		<Product>Tahsilat.NET SDK</Product>
 		<Description>Official .NET SDK for Tahsilat.com payment gateway integration</Description>
 		<Copyright>Copyright (c) 2026 Tahsilat.com</Copyright>
-		<PackageReleaseNotes> Updated v1.1.0 =>
+		<PackageReleaseNotes> Updated v1.1.1 =>
+				- Documentation only, no code changes. The v1.1.0 README incorrectly stated that TahsilatNetworkException covers connection failures and timeouts. It does not: it maps to an HTTP 424 response. A timeout surfaces as TaskCanceledException and a connection failure as HttpRequestException, and neither is caught by catch (TahsilatException)
+				- Added a "Timeout ve Baglanti Hatalari" section explaining that the SDK never retries automatically, that a timed out mutating call (payment, refund, pre-auth resolve) may still have been processed by the server, and that you must re-query the transaction before retrying instead of resending blindly
+
+			Updated v1.1.0 =>
 				- BREAKING: removed the unused RefundService and the TahsilatClient.Refunds property. Refunds now have a single entry point: Transactions.RefundAsync(request) / Transactions.Refund(request)
 				- RefundCreateRequest.Amount is now nullable (int?). Leave it null to refund the full transaction amount; provide a value (in kurus, min 100) for a partial refund
 				- Documented that the refund endpoint never populates the response Data field (it is always null). Read the outcome from Status and Message; a bank rejection returns Status false instead of an HTTP error

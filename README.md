@@ -542,8 +542,10 @@ catch (TahsilatRateLimitException ex)
 }
 catch (TahsilatNetworkException ex)
 {
-    // Ağ hatası (bağlantı sorunu, timeout vb.)
-    Console.WriteLine($"Ağ hatası: {ex.Message}");
+    // API'den 424 yanıtı döndü (banka/sağlayıcı tarafında bağımlılık hatası)
+    // DİKKAT: gerçek bağlantı sorunları ve timeout bu bloğa DÜŞMEZ,
+    // aşağıdaki "Timeout ve Bağlantı Hataları" bölümüne bakın
+    Console.WriteLine($"Bağımlılık hatası: {ex.Message}");
 }
 catch (TahsilatApiException ex)
 {
@@ -570,11 +572,55 @@ catch (TahsilatException ex)
 | ├─ `TahsilatNotFoundException` | Kaynak bulunamadı (404) | — |
 | ├─ `TahsilatPaymentException` | Ödeme işlemi hatası | — |
 | ├─ `TahsilatRateLimitException` | İstek limiti aşıldı (429) | `RetryAfterSeconds` |
-| ├─ `TahsilatNetworkException` | Ağ/bağlantı hatası | — |
+| ├─ `TahsilatNetworkException` | API'den 424 yanıtı (bağımlılık hatası) | — |
 | ├─ `TahsilatApiException` | Diğer API hataları | `StatusCode` |
 | └─ `TahsilatWebhookException` | Webhook doğrulama hatası | — |
 
 > **Not:** İade endpoint'i pratikte `200, 400, 403, 404, 422, 429, 500` durum kodlarını döndürür; `402` ve `424` döndürmez. SDK'daki `TahsilatPaymentException` (402) ve `TahsilatNetworkException` (424) eşlemeleri savunma amaçlı genel eşlemelerdir ve diğer endpoint'ler için korunmaktadır.
+
+### Timeout ve Bağlantı Hataları
+
+Yukarıdaki exception'ların tamamı, API'den **bir yanıt döndüğü** durumları temsil eder. Yanıtın hiç dönmediği iki durum Tahsilat exception hiyerarşisinin **dışında** kalır ve ham .NET exception'ları olarak fırlar:
+
+| Durum | Fırlayan exception |
+|-------|--------------------|
+| `TimeoutSeconds` süresi aşıldı | `TaskCanceledException` |
+| DNS çözülemedi, bağlantı reddedildi, SSL hatası | `HttpRequestException` |
+
+Bu ikisi `catch (TahsilatException)` ile **yakalanmaz**; ayrıca ele almanız gerekir.
+
+SDK **otomatik tekrar deneme yapmaz.** Bu bilinçli bir tercihtir: timeout, isteğin başarısız olduğu anlamına gelmez — istek sunucuya ulaşmış ve işlenmiş, yanıt size dönerken süre aşılmış olabilir.
+
+> **Uyarı:** Timeout alan bir mutasyon çağrısını (ödeme oluşturma, iade, ön provizyon kapatma) körlemesine tekrarlamayın. İşlem sunucuda gerçekleşmiş olabilir; tekrar etmek **ikinci bir iade** ya da **ikinci bir ödeme** oluşturabilir.
+
+Doğru yaklaşım — tekrar denemeden önce işlemin güncel durumunu sorgulayın:
+
+```csharp
+using Tahsilat.NET.Extensions;
+
+try
+{
+    var response = await tahsilat.Transactions.RefundAsync(request);
+}
+catch (TaskCanceledException)
+{
+    // Timeout: iade sunucuda gerçekleşmiş OLABİLİR — doğrulamadan tekrar etme
+    var transaction = await tahsilat.Transactions.RetrieveAsync(request.TransactionId);
+
+    if (transaction.HasRefund())
+        return; // İade zaten işlenmiş, tekrar gönderme
+
+    // İade işlenmemiş, güvenle tekrar denenebilir
+}
+catch (HttpRequestException)
+{
+    // İstek sunucuya hiç ulaşmadı — tekrar denemek güvenlidir
+}
+```
+
+Bağlantının hiç kurulamadığı durumlarda istek sunucuya ulaşmadığı için tekrar denemek güvenlidir. Belirsiz olan tek durum **timeout**'tur; orada mutlaka önce sorgulayın.
+
+`TimeoutSeconds` varsayılan olarak 30 saniyedir ve `TahsilatClientOptions` üzerinden değiştirilebilir.
 
 
 ## API Key Türleri
