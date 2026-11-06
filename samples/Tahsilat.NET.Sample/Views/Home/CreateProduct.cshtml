@@ -85,7 +85,9 @@
                 <div class="card-header">Abonelik (Tekrarlayan Ödeme)</div>
                 <div class="card-body">
                     <div class="form-check mb-3">
-                        <input asp-for="IsRecurring" class="form-check-input" type="checkbox" value="true" id="isRecurring">
+                        @* IsRecurring bool? olduğu için asp-for checkbox tag helper'ı kullanılamıyor; düz input. *@
+                        <input class="form-check-input" type="checkbox" name="IsRecurring" value="true" id="isRecurring"
+                               checked="@(Model?.IsRecurring == true)">
                         <label class="form-check-label" for="isRecurring">Bu ürün bir abonelik ürünü</label>
                     </div>
                     <div class="row">
