@@ -16,18 +16,14 @@ namespace Tahsilat.NET.Services.Implementations
 
         public async Task<List<CommissionResponse>> SearchAsync(CommissionSearchRequest request = null, CancellationToken cancellationToken = default)
         {
-            var httpRequest = request != null
-                ? CreateGet("pos/commissions", request)
-                : CreateGet("pos/commissions");
+            var httpRequest = CreateGet("pos/commissions", request);
             var response = await _http.SendAndReadAsync<ApiResponse<List<CommissionResponse>>>(httpRequest, cancellationToken).ConfigureAwait(false);
             return response?.Data;
         }
 
         public List<CommissionResponse> Search(CommissionSearchRequest request = null)
         {
-            var httpRequest = request != null
-                ? CreateGet("pos/commissions", request)
-                : CreateGet("pos/commissions");
+            var httpRequest = CreateGet("pos/commissions", request);
             var response = _http.SendAndRead<ApiResponse<List<CommissionResponse>>>(httpRequest);
             return response?.Data;
         }

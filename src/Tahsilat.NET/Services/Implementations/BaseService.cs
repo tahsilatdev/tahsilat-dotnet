@@ -32,13 +32,14 @@ namespace Tahsilat.NET.Services.Implementations
             return new HttpRequestMessage(HttpMethod.Get, endpoint);
         }
 
-        protected HttpRequestMessage CreateGet(string endpoint, object body)
+        /// <summary>
+        /// GET with the request object's properties sent as query string parameters.
+        /// A GET body is ignored by the API and rejected outright by .NET Framework's
+        /// HttpClient, so filters must travel in the URL.
+        /// </summary>
+        protected HttpRequestMessage CreateGet(string endpoint, object? query)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, endpoint)
-            {
-                Content = FormUrlEncodedContentBuilder.Build(body)
-            };
-            return request;
+            return new HttpRequestMessage(HttpMethod.Get, endpoint + QueryStringBuilder.Build(query));
         }
 
         protected HttpRequestMessage CreateDelete(string endpoint)
