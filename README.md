@@ -52,7 +52,9 @@ using Tahsilat.NET.Extensions;
 builder.Services.AddTahsilat(options =>
 {
     options.ApiKey = "sk_test_YOUR_SECRET_KEY";
-    options.TimeoutSeconds = 30; // Varsayılan: 30 saniye
+    options.TimeoutSeconds = 80;      // Varsayılan: 80 saniye (banka yanıtları yavaş olabilir)
+    options.MaxNetworkRetries = 3;    // Varsayılan: 3 — bkz. "Timeout ve Bağlantı Hataları"
+    // options.HttpMessageHandler = new HttpClientHandler { Proxy = ... }; // proxy / loglama / test
 });
 ```
 
@@ -104,14 +106,41 @@ var request = new CustomerCreateRequest
 var response = await tahsilat.Customers.CreateAsync(request);
 ```
 
+> **Metadata kuralları:** en fazla 25 kayıt; `key` küçük harfle başlar, yalnızca `a-z`, `0-9`, `_` içerir ve en fazla 20 karakterdir; `value` en fazla 200 karakterdir ve **olduğu gibi gönderilir** (`"İstanbul şubesi"` gibi Türkçe karakterler korunur).
+
 Müşteri servisinin diğer metotları:
 
 ```csharp
 var customer = await tahsilat.Customers.GetAsync(20585467989184);
-var results  = await tahsilat.Customers.SearchAsync("testuser");   // ada/e-postaya göre arama
 var updated  = await tahsilat.Customers.UpdateAsync(20585467989184, new CustomerUpdateRequest { City = "Ankara" });
 var deleted  = await tahsilat.Customers.DeleteAsync(20585467989184); // bool döner
 ```
+
+#### Müşteri Arama
+
+Arama bir filtre nesnesi alır, **sayfalı** bir sonuç döner. Hiç filtre vermezseniz ilk sayfa gelir:
+
+```csharp
+var page = await tahsilat.Customers.SearchAsync(new CustomerSearchRequest
+{
+    Search = "ayşe",                  // ad, e-posta ve telefonda serbest arama
+    Email = "ayse@mail.com",
+    CustomerDate = new DateRangeFilter
+    {
+        StartDate = new DateTime(2026, 1, 1),
+        EndDate   = new DateTime(2026, 1, 31)
+    },
+    Metadata = new MetadataFilter { Key = "customer_type", Value = "premium" },
+    Page = 1,                         // ya da Start = 0 (satır ofseti)
+    Limit = 50                        // 1-100
+});
+
+Console.WriteLine(page.Meta.Total);   // toplam eşleşen kayıt
+foreach (var c in page.Customers)
+    Console.WriteLine($"{c.Id} {c.NameLastName} {c.Email}");
+```
+
+Kullanılabilir filtreler: `Search`, `CustomerId`, `NameLastName`, `Email`, `Phone`, `CustomerDate` (tarih aralığı), `Metadata` (key/value). Filtreler AND ile birleşir.
 
 ### Ürün Oluşturma
 ```csharp
@@ -142,10 +171,108 @@ var response = await tahsilat.Products.CreateAsync(request);
 
 ```csharp
 var product = await tahsilat.Products.GetAsync(55437751141488);
-var results = await tahsilat.Products.SearchAsync("Test Product");
 var updated = await tahsilat.Products.UpdateAsync(55437751141488, new ProductUpdateRequest { Price = 89900 });
 var deleted = await tahsilat.Products.DeleteAsync(55437751141488); // bool döner
 ```
+
+#### Ürün Arama
+
+```csharp
+var page = await tahsilat.Products.SearchAsync(new ProductSearchRequest
+{
+    ProductName = "Premium",
+    Financial = new PriceFilter { Price = 10000, Operator = ">=" },   // kuruş
+    ProductDate = new DateRangeFilter { StartDate = new DateTime(2026, 1, 1) },
+    Metadata = new MetadataFilter { Key = "product_type" },
+    Page = 1,
+    Limit = 50
+});
+
+Console.WriteLine(page.Meta.Total);
+foreach (var p in page.Products)
+    Console.WriteLine($"{p.Id} {p.ProductName} {p.FormattedPrice}");
+```
+
+Kullanılabilir filtreler: `ProductId`, `ProductName`, `Financial` (fiyat + operatör), `ProductDate`, `Metadata`.
+
+#### Ürün Metadata'sını Güncelleme
+
+`UpdateMetadataAsync` gönderdiğiniz listeyi ürünün **mevcut metadata'sının tamamının yerine** koyar; listede olmayan kayıtlar silinir. Korumak istediklerinizi yeniden gönderin:
+
+```csharp
+var product = await tahsilat.Products.UpdateMetadataAsync(55437751141488, new()
+{
+    new Dictionary<string, object> { ["product_type"] = "phone" },
+    new Dictionary<string, object> { ["source"] = "tahsilat-dotnet" }
+});
+```
+
+### Abonelik (Tekrarlayan Ödeme)
+
+Abonelik, ürün üzerinde tanımlanır; ayrı bir endpoint yoktur. Önce abonelik ürünü oluşturun, sonra bu ürünle `ProductIds` üzerinden normal bir ödeme başlatın. Müşteri ilk ödemeyi 3D Secure ile tamamladığında abonelik otomatik oluşur.
+
+```csharp
+using Tahsilat.NET.Models.Enums;
+
+// 1. Abonelik ürünü
+var product = await tahsilat.Products.CreateAsync(new ProductCreateRequest
+{
+    ProductName = "Premium Üyelik",
+    Price = 49900,
+    IsRecurring = true,
+    BillingInterval = BillingInterval.Month, // Day, Week, Month, Year
+    IntervalCount = 1                        // 1-366: Month + 2 = iki ayda bir
+});
+
+Console.WriteLine(product.RecurringText);    // "Aylık" — ödeme sayfasında ve e-postalarda görünür
+
+// 2. İlk ödeme
+var payment = await tahsilat.Payments.CreateAsync(new PaymentCreateRequest
+{
+    Amount = 49900,
+    Currency = "TRY",
+    CustomerId = 50012535976895,
+    ProductIds = new List<long> { product.Id },
+    // Birden fazla abonelik destekli POS'unuz varsa zorunlu, aksi halde 422 döner:
+    // SubscriptionCredentialId = 123,
+});
+```
+
+Kurallar:
+
+- Abonelik yalnız `ProductIds` ile başlar; anlık `Products` listesiyle başlamaz.
+- Aynı ödemedeki abonelik ürünleri aynı dönemde olmalıdır (`4003`); taksit kullanılamaz (`4005`); "Sadece Taksit" ile birlikte kullanılamaz (`4004`).
+- Özellik hesabınızda etkin değilse istekler `4002` ya da `4007` ile reddedilir.
+- Aktif ya da ilk ödemesi bekleyen bir aboneliğe bağlı üründe ad, fiyat ve abonelik alanları değiştirilemez, ürün silinemez; API `409` döner (`TahsilatConflictException`).
+
+Sonraki dönem tahsilatları **yeni bir `transaction_id` ile ayrı işlem** olarak gelir. İşlem sonucu ve webhook yükündeki `Subscription` bloğu abonelik kimliğini ve dönem numarasını taşır; abonelik dışı işlemlerde `null`dır:
+
+```csharp
+using Tahsilat.NET.Extensions;
+
+var transaction = await tahsilat.Transactions.RetrieveAsync(75690998341504);
+
+if (transaction.HasSubscription())
+{
+    var subscriptionId = transaction.GetSubscriptionId();
+    var cycleNumber    = transaction.GetSubscriptionCycleNumber();   // 0 = ilk 3D ödeme
+    var isFirst        = transaction.IsInitialSubscriptionPayment();
+    var statusText     = transaction.GetSubscriptionStatusTextTr();  // "Aktif", "Ödeme Bekliyor", ...
+
+    // Ham alanlar: transaction.Subscription.Status (SubscriptionStatus enum değerleri),
+    // NextBillingAt, CancelledAt, StatusText
+}
+```
+
+| `SubscriptionStatus` | Değer | Anlamı |
+|---|---|---|
+| `Pending` | 5 | İlk ödeme bekleniyor |
+| `Active` | 1 | Aktif, sonraki tahsilat `NextBillingAt` tarihinde |
+| `PastDue` | 2 | Son tahsilat başarısız, tekrar deneniyor |
+| `Cancelled` | 3 | İptal edildi, yeni tahsilat yapılmaz |
+| `Completed` | 4 | Planlanan tüm dönemler tahsil edildi |
+
+> `cycle_number` yalnız dönem değişince artar; aynı dönemdeki başarısız denemeler aynı numarayı taşır. Bir dönemi yalnız **başarılı** sonuçta ödenmiş sayın. Webhook'taki durum gönderim anındaki durumdur; güncel durum için işlemi sorgulayın.
 
 ### Ödeme Oluşturma
 
@@ -242,6 +369,9 @@ var response = await tahsilat.Payments.CreateAsync(request);
 | `PreAuth` | ❌ | `true` ise tutar çekilmez, yalnızca bloke edilir (varsayılan `false`) |
 | `Description` | ❌ | İşlem açıklaması |
 | `Metadata` | ❌ | Raporlama için ek veri (en fazla 25 nesne) |
+| `SubscriptionCredentialId` | ⚠️ | Abonelik ürünü içeren ödemede tahsilatın yapılacağı POS. Birden fazla abonelik destekli POS varsa zorunlu |
+| `WhiteLabel` | ❌ | Yalnız white label yetkisi olan firmalar: kart bilgisi kendi sayfanızda alınır |
+| `InstallmentCount` | ❌ | Taksit sayısı; yalnız `WhiteLabel = true` iken dikkate alınır. Abonelik ürünüyle kullanılamaz |
 
 #### Ödeme Yanıtının Kullanımı
 
@@ -327,7 +457,7 @@ if (approve.Status)
 }
 ```
 
-> `ResolvePreAuthAsync` bir `ApiResponse<PreAuthResolveResponse>` döner; sonucu `Status` ve `Message` alanlarından okuyun.
+> `ResolvePreAuthAsync` ve senkron `ResolvePreAuth` bir `ApiResponse<PreAuthResolveResponse>` döner. Banka kapatmayı reddederse yanıt `Status = false` ile gelmez, `TahsilatApiException` fırlar (bkz. "Hata Yönetimi").
 
 ### İşlem Sorgulama
 ```csharp
@@ -350,7 +480,14 @@ if (transaction.PaymentStatus == 2) {
 if (transaction.PaymentStatus == 3) {
     Console.WriteLine("Ödeme henüz tamamlanmadı.");
 }
+
+// Aynı kontroller extension metotlarıyla:
+using Tahsilat.NET.Extensions;
+if (transaction.IsSuccess()) { /* ... */ }
+if (transaction.HasSubscription()) { /* bkz. "Abonelik (Tekrarlayan Ödeme)" */ }
 ```
+
+> Var olmayan bir işlem sorgulandığında API `404` yerine `422` + `error_code: 901` dönebilir; bu durumda `TahsilatNotFoundException` değil `TahsilatValidationException` fırlar. İkisini birlikte yakalayın.
 
 ### İade İşlemi
 
@@ -393,26 +530,26 @@ var response = await tahsilat.Transactions.RefundAsync(request);
 
 #### İade Yanıtının Okunması
 
-`RefundAsync`, diğer metotlardan farklı olarak **`ApiResponse<RefundResponse>`** döner. Sonucu `Status` ve `Message` alanlarından okursunuz:
+`RefundAsync`, diğer metotlardan farklı olarak **`ApiResponse<RefundResponse>`** döner. Başarılı sonucu `Message` alanından okursunuz; banka iadeyi reddederse **`TahsilatApiException` fırlar**:
 
 ```csharp
-var response = await tahsilat.Transactions.RefundAsync(request);
-
-if (response.Status)
+try
 {
+    var response = await tahsilat.Transactions.RefundAsync(request);
+
     // "İade işlemi başarıyla gerçekleştirildi ve tutar bakiyenizden düşüldü."
     Console.WriteLine(response.Message);
 }
-else
+catch (TahsilatApiException ex) when (ex.StatusCode == 200)
 {
     // Banka reddetti — iade beklemede kalır, tekrar denenebilir
-    Console.WriteLine($"İade reddedildi: {response.Message}");
+    Console.WriteLine($"İade reddedildi: {ex.Message} (kod: {ex.ErrorCode})");
 }
 ```
 
 > **Önemli:** İade endpoint'i **`Data` alanını doldurmaz, her zaman `null` döner.** İade kaydının detaylarına (tutar, banka referans kodu, durum) bu yanıttan erişemezsiniz. İşlemin güncel durumunu görmek için `Transactions.RetrieveAsync(transactionId)` ile işlemi yeniden sorgulayın ya da webhook'u dinleyin.
 
-> **Önemli:** Banka iadeyi reddederse **HTTP hatası oluşmaz**; `Status` alanı `false` gelir ve sebep `Message` içinde yer alır. Bu yüzden `Status` kontrolünü atlamayın — exception beklemek yeterli değildir.
+> **1.2.0 davranış değişikliği:** Önceki sürümlerde banka reddi `Status = false` ile sessizce dönüyordu. Artık API `200` içinde `"status": false` gönderdiğinde SDK, tahsilat-php ile aynı şekilde, `TahsilatApiException` fırlatır (`StatusCode = 200`, `ErrorCode` API'nin hata kodu). `Status` kontrolü yapan eski kodu `try/catch` ile değiştirin.
 
 > **Not:** Bir işlem üzerinde önceki iade tamamlanmadan yeni iade başlatılamaz.
 
@@ -513,20 +650,32 @@ try
 }
 catch (TahsilatAuthenticationException ex)
 {
-    // Geçersiz API key (401)
+    // Geçersiz API key ya da yetki hatası (401 / 403).
+    // Süresi dolan access token bu bloğa düşmez: SDK yeni token alıp isteği bir kez tekrarlar.
     Console.WriteLine($"Kimlik doğrulama hatası: {ex.Message}");
     Console.WriteLine($"HTTP Durum Kodu: {ex.StatusCode}");
 }
 catch (TahsilatValidationException ex)
 {
-    // Geçersiz istek parametreleri (422)
+    // Geçersiz istek parametreleri (400 / 422)
     Console.WriteLine($"Validasyon hatası: {ex.Message}");
     Console.WriteLine($"Hata Kodu: {ex.ErrorCode}");
+
+    // Alan bazlı hatalar: { "amount": ["Tutar zorunludur."], "currency": [...] }
+    // Alana bağlı olmayan mesajlar "*" anahtarı altındadır.
+    foreach (var field in ex.Errors)
+        Console.WriteLine($"{field.Key}: {string.Join(", ", field.Value)}");
 }
 catch (TahsilatNotFoundException ex)
 {
     // Kaynak bulunamadı (404)
     Console.WriteLine($"Bulunamadı: {ex.Message}");
+}
+catch (TahsilatConflictException ex)
+{
+    // Kaydın mevcut durumuyla çelişen istek (409):
+    // aktif aboneliği olan ürünü silmek / fiyatını değiştirmek gibi
+    Console.WriteLine($"Çakışma: {ex.Message}");
 }
 catch (TahsilatPaymentException ex)
 {
@@ -542,14 +691,15 @@ catch (TahsilatRateLimitException ex)
 }
 catch (TahsilatNetworkException ex)
 {
-    // API'den 424 yanıtı döndü (banka/sağlayıcı tarafında bağımlılık hatası)
-    // DİKKAT: gerçek bağlantı sorunları ve timeout bu bloğa DÜŞMEZ,
-    // aşağıdaki "Timeout ve Bağlantı Hataları" bölümüne bakın
-    Console.WriteLine($"Bağımlılık hatası: {ex.Message}");
+    // İstek tamamlanamadı: bağlantı kurulamadı, bağlantı koptu, timeout
+    // (ex.InnerException dolu) ya da API 424 döndü (bağımlılık hatası).
+    // Bkz. "Timeout ve Bağlantı Hataları"
+    Console.WriteLine($"Ağ hatası: {ex.Message}");
 }
 catch (TahsilatApiException ex)
 {
-    // Diğer API hataları (5xx vb.)
+    // Diğer API hataları (5xx vb.) ve 200 içinde "status": false dönen yanıtlar
+    // (örn. bankanın reddettiği iade — StatusCode 200, ErrorCode API'nin kodu)
     Console.WriteLine($"API Hatası: {ex.Message}");
     Console.WriteLine($"HTTP Durum Kodu: {ex.StatusCode}");
     Console.WriteLine($"Hata Kodu: {ex.ErrorCode}");
@@ -567,33 +717,33 @@ catch (TahsilatException ex)
 | Exception | Açıklama | Özel Property'ler |
 |-----------|----------|-------------------|
 | `TahsilatException` | Tüm SDK hatalarının base sınıfı | `ErrorCode` |
-| ├─ `TahsilatAuthenticationException` | Geçersiz API key (401) | `StatusCode` |
-| ├─ `TahsilatValidationException` | Geçersiz istek parametreleri (422) | — |
+| ├─ `TahsilatAuthenticationException` | Geçersiz API key / yetki hatası (401, 403) | `StatusCode` |
+| ├─ `TahsilatValidationException` | Geçersiz istek parametreleri (400, 422) | `Errors` (alan → mesajlar) |
 | ├─ `TahsilatNotFoundException` | Kaynak bulunamadı (404) | — |
-| ├─ `TahsilatPaymentException` | Ödeme işlemi hatası | — |
+| ├─ `TahsilatConflictException` | Kaydın durumuyla çelişen istek (409) | — |
+| ├─ `TahsilatPaymentException` | Ödeme işlemi hatası (402) | — |
 | ├─ `TahsilatRateLimitException` | İstek limiti aşıldı (429) | `RetryAfterSeconds` |
-| ├─ `TahsilatNetworkException` | API'den 424 yanıtı (bağımlılık hatası) | — |
-| ├─ `TahsilatApiException` | Diğer API hataları | `StatusCode` |
+| ├─ `TahsilatNetworkException` | Bağlantı/timeout hatası ya da API'den 424 | `InnerException` (yerel hatalarda) |
+| ├─ `TahsilatApiException` | Diğer API hataları ve `200` + `"status": false` | `StatusCode` |
 | └─ `TahsilatWebhookException` | Webhook doğrulama hatası | — |
 
 > **Not:** İade endpoint'i pratikte `200, 400, 403, 404, 422, 429, 500` durum kodlarını döndürür; `402` ve `424` döndürmez. SDK'daki `TahsilatPaymentException` (402) ve `TahsilatNetworkException` (424) eşlemeleri savunma amaçlı genel eşlemelerdir ve diğer endpoint'ler için korunmaktadır.
 
 ### Timeout ve Bağlantı Hataları
 
-Yukarıdaki exception'ların tamamı, API'den **bir yanıt döndüğü** durumları temsil eder. Yanıtın hiç dönmediği iki durum Tahsilat exception hiyerarşisinin **dışında** kalır ve ham .NET exception'ları olarak fırlar:
+Yanıtın hiç dönmediği durumlar (`DNS çözülemedi`, bağlantı reddedildi, SSL hatası, bağlantı koptu, `TimeoutSeconds` aşıldı) **`TahsilatNetworkException`** olarak fırlar; ham `HttpRequestException` / `TaskCanceledException` `InnerException` içinde durur. Yani `catch (TahsilatException)` bu durumları da yakalar. (Sizin verdiğiniz `CancellationToken` iptal edildiğinde ise `OperationCanceledException` olduğu gibi fırlar.)
 
-| Durum | Fırlayan exception |
-|-------|--------------------|
-| `TimeoutSeconds` süresi aşıldı | `TaskCanceledException` |
-| DNS çözülemedi, bağlantı reddedildi, SSL hatası | `HttpRequestException` |
+SDK, transport hatalarında **güvenli olduğu ölçüde** otomatik tekrar dener (`MaxNetworkRetries`, varsayılan 3; `0` kapatır):
 
-Bu ikisi `catch (TahsilatException)` ile **yakalanmaz**; ayrıca ele almanız gerekir.
+| Hata | Tekrar denenir mi? | Neden |
+|------|-------------------|-------|
+| Bağlantı kurulamadı (DNS, TCP, TLS) | ✅ Her istekte | İstek sunucuya hiç ulaşmadı |
+| Timeout ya da bağlantı koptu — **GET** ve token isteği | ✅ | Tekrarın yan etkisi yok |
+| Timeout ya da bağlantı koptu — **POST** (ödeme, iade, ön provizyon) | ❌ | İstek sunucuda işlenmiş olabilir; tekrar etmek **ikinci bir iade / ödeme** oluşturabilir |
 
-SDK **otomatik tekrar deneme yapmaz.** Bu bilinçli bir tercihtir: timeout, isteğin başarısız olduğu anlamına gelmez — istek sunucuya ulaşmış ve işlenmiş, yanıt size dönerken süre aşılmış olabilir.
+Denemeler arasında 0,5 s, 1 s, 1,5 s... (en fazla 2 s) beklenir.
 
-> **Uyarı:** Timeout alan bir mutasyon çağrısını (ödeme oluşturma, iade, ön provizyon kapatma) körlemesine tekrarlamayın. İşlem sunucuda gerçekleşmiş olabilir; tekrar etmek **ikinci bir iade** ya da **ikinci bir ödeme** oluşturabilir.
-
-Doğru yaklaşım — tekrar denemeden önce işlemin güncel durumunu sorgulayın:
+> **Uyarı:** Timeout alan bir mutasyon çağrısını kendiniz de körlemesine tekrarlamayın. Önce işlemin güncel durumunu sorgulayın:
 
 ```csharp
 using Tahsilat.NET.Extensions;
@@ -602,9 +752,9 @@ try
 {
     var response = await tahsilat.Transactions.RefundAsync(request);
 }
-catch (TaskCanceledException)
+catch (TahsilatNetworkException ex) when (ex.InnerException != null)
 {
-    // Timeout: iade sunucuda gerçekleşmiş OLABİLİR — doğrulamadan tekrar etme
+    // Bağlantı/timeout: iade sunucuda gerçekleşmiş OLABİLİR — doğrulamadan tekrar etme
     var transaction = await tahsilat.Transactions.RetrieveAsync(request.TransactionId);
 
     if (transaction.HasRefund())
@@ -612,15 +762,9 @@ catch (TaskCanceledException)
 
     // İade işlenmemiş, güvenle tekrar denenebilir
 }
-catch (HttpRequestException)
-{
-    // İstek sunucuya hiç ulaşmadı — tekrar denemek güvenlidir
-}
 ```
 
-Bağlantının hiç kurulamadığı durumlarda istek sunucuya ulaşmadığı için tekrar denemek güvenlidir. Belirsiz olan tek durum **timeout**'tur; orada mutlaka önce sorgulayın.
-
-`TimeoutSeconds` varsayılan olarak 30 saniyedir ve `TahsilatClientOptions` üzerinden değiştirilebilir.
+`TimeoutSeconds` varsayılan olarak **80 saniyedir** (banka yanıtları yavaş olabilir) ve `TahsilatClientOptions` üzerinden değiştirilebilir.
 
 
 ## API Key Türleri
@@ -655,7 +799,9 @@ public async Task<IActionResult> Webhook()
 
     try
     {
-        // 3. Webhook event'i doğrula ve parse et
+        // 3. Webhook event'i doğrula ve parse et.
+        //    Replay koruması varsayılan olarak açıktır: 5 dakikadan eski (ya da
+        //    5 dakikadan ileri tarihli) webhook'lar reddedilir.
         var webhookEvent = WebhookHandler.ConstructEvent(payloadBytes, signature, "whsec_YOUR_WEBHOOK_SECRET");
 
         // 4. Ödeme durumuna göre işlem yap
@@ -663,7 +809,7 @@ public async Task<IActionResult> Webhook()
         {
             // Ödeme başarılı
             Console.WriteLine($"Ödeme başarılı! Transaction ID: {webhookEvent.TransactionId}");
-            Console.WriteLine($"Tutar: {webhookEvent.Amount} {webhookEvent.CurrencyCode}");
+            Console.WriteLine($"Tutar: {webhookEvent.FormattedAmount} {webhookEvent.CurrencyCode}");
         }
         else if (webhookEvent.IsFailed())
         {
@@ -671,17 +817,38 @@ public async Task<IActionResult> Webhook()
             Console.WriteLine($"Ödeme başarısız. Transaction ID: {webhookEvent.TransactionId}");
         }
 
+        // 5. Abonelik ödemesi mi? (dönem tahsilatları ayrı transaction_id ile gelir)
+        if (webhookEvent.HasSubscription())
+        {
+            Console.WriteLine($"Abonelik {webhookEvent.GetSubscriptionId()}, dönem {webhookEvent.GetSubscriptionCycleNumber()}");
+        }
+
         return Ok();
     }
     catch (TahsilatWebhookException ex)
     {
-        // İmza doğrulaması başarısız
+        // İmza doğrulaması başarısız ya da zaman damgası tolerans dışında
         return BadRequest(new { error = "Invalid signature" });
     }
 }
 ```
 
-> **Not:** `IsSuccess()`, `IsFailed()`, `IsPending()`, `IsRefunded()` gibi extension metotları ile ödeme ve işlem durumunu kolayca kontrol edebilirsiniz.
+Zaman toleransı `tolerance` parametresiyle ayarlanır:
+
+```csharp
+// Varsayılan: 5 dakika (WebhookHandler.DefaultTolerance)
+WebhookHandler.ConstructEvent(payloadBytes, signature, secret);
+
+// Daha geniş tolerans
+WebhookHandler.ConstructEvent(payloadBytes, signature, secret, TimeSpan.FromMinutes(15));
+
+// Zaman kontrolünü kapat (imza yine doğrulanır) — yalnız sunucu saatine güvenemiyorsanız
+WebhookHandler.ConstructEvent(payloadBytes, signature, secret, WebhookHandler.DisableTimestampCheck);
+```
+
+> **1.2.0 davranış değişikliği:** Önceki sürümlerde `tolerance` verilmediğinde zaman kontrolü hiç yapılmıyordu. Artık varsayılan 5 dakikadır. Sunucu saatinizin doğru (NTP ile eşitlenmiş) olduğundan emin olun.
+
+> **Not:** `IsSuccess()`, `IsFailed()`, `IsPending()`, `IsRefunded()`, `HasSubscription()` gibi extension metotları ile ödeme, işlem ve abonelik durumunu kolayca kontrol edebilirsiniz.
 
 
 
@@ -694,7 +861,10 @@ Tüm servisler hem asenkron hem de senkron metotları destekler. Eski .NET Frame
 var response = tahsilat.Payments.Create(request);
 var transaction = tahsilat.Transactions.Retrieve(transactionId);
 var customer = tahsilat.Customers.Create(customerRequest);
+var page = tahsilat.Products.Search(new ProductSearchRequest { ProductName = "Premium" });
 ```
+
+> Senkron ve asenkron metotlar aynı tipleri döner; `ResolvePreAuth` da `ResolvePreAuthAsync` gibi `ApiResponse<PreAuthResolveResponse>` döner.
 
 ## Güvenlik
 
