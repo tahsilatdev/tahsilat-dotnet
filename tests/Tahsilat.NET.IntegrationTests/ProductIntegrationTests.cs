@@ -49,5 +49,24 @@ namespace Tahsilat.NET.IntegrationTests
             if (!string.IsNullOrEmpty(res.ProductImageUrl))
                 Assert.True(res.ProductImageUrl.Length > 0);
         }
+
+        [Fact]
+        public async Task DeleteProduct_ShouldReturnTrue()
+        {
+            var created = await Client.Products.CreateAsync(new ProductCreateRequest
+            {
+                ProductName = "Delete Test Product",
+                Price = 1000,
+                Description = "Integration Test Product (delete)"
+            });
+
+            Assert.NotNull(created);
+            Assert.True(created.Id > 0);
+
+            // DELETE isteği Content-Type başlığı olmadan 415 alıyordu.
+            var deleted = await Client.Products.DeleteAsync(created.Id);
+
+            Assert.True(deleted);
+        }
     }
 }

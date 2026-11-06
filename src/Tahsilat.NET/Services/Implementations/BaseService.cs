@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Http;
+using System.Text;
 using Tahsilat.NET.Infrastructure.Http;
 
 namespace Tahsilat.NET.Services.Implementations
@@ -42,7 +43,13 @@ namespace Tahsilat.NET.Services.Implementations
 
         protected HttpRequestMessage CreateDelete(string endpoint)
         {
-            return new HttpRequestMessage(HttpMethod.Delete, endpoint);
+            // The API requires a Content-Type header on every non-GET request
+            // and answers 415 without one. Send an empty JSON body, the same
+            // way the token request does.
+            return new HttpRequestMessage(HttpMethod.Delete, endpoint)
+            {
+                Content = new StringContent(string.Empty, Encoding.UTF8, "application/json")
+            };
         }
     }
 }

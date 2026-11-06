@@ -50,5 +50,26 @@ namespace Tahsilat.NET.IntegrationTests
             if (!string.IsNullOrEmpty(result.FormattedUpdatedAt))
                 Assert.True(result.FormattedUpdatedAt.Length > 0);
         }
+
+        [Fact]
+        public async Task DeleteCustomer_ShouldReturnTrue()
+        {
+            var created = await Client.Customers.CreateAsync(new CustomerCreateRequest
+            {
+                Name = "Delete",
+                LastName = "Test",
+                Email = "deletetest@mail.com",
+                Phone = "+901234567890",
+                Country = "TR"
+            });
+
+            Assert.NotNull(created);
+            Assert.True(created.Id > 0);
+
+            // DELETE isteği Content-Type başlığı olmadan 415 alıyordu.
+            var deleted = await Client.Customers.DeleteAsync(created.Id);
+
+            Assert.True(deleted);
+        }
     }
 }

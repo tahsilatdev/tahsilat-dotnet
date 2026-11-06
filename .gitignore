@@ -59,3 +59,6 @@ Thumbs.db
 
 # Temp directory
 temp/
+
+# Local secrets for integration tests (sandbox API key); never commit
+appsettings.local.json
