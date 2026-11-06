@@ -1,5 +1,4 @@
 ﻿using System;
-using Tahsilat.NET.Infrastructure.Logging;
 
 namespace Tahsilat.NET.Configuration
 {
@@ -18,8 +17,6 @@ namespace Tahsilat.NET.Configuration
         }
 
         public int TimeoutSeconds { get; set; } = 30;
-
-        public ITahsilatLogger? Logger { get; set; }
 
         internal bool IsSandbox => _apiKey.StartsWith("sk_test_", StringComparison.OrdinalIgnoreCase);
 
