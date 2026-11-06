@@ -95,13 +95,25 @@ namespace Tahsilat.NET.Tests
             var product = JsonConvert.DeserializeObject<ProductResponse>(
                 "{\"id\":55195540441484,\"product_name\":\"Premium Üyelik\",\"price\":49900," +
                 "\"is_recurring\":true,\"billing_interval\":3,\"interval_count\":1,\"recurring_text\":\"Aylık\"," +
-                "\"payment_link\":\"https://pay.tahsilat.com/x\"}")!;
+                "\"payment_link\":{\"has_payment_link\":true,\"url\":\"https://pay.tahsilat.com/x\"}}")!;
 
             Assert.True(product.IsRecurring);
             Assert.Equal((int)BillingInterval.Month, product.BillingInterval);
             Assert.Equal(1, product.IntervalCount);
             Assert.Equal("Aylık", product.RecurringText);
-            Assert.Equal("https://pay.tahsilat.com/x", product.PaymentLink);
+            Assert.True(product.PaymentLink.HasPaymentLink);
+            Assert.Equal("https://pay.tahsilat.com/x", product.PaymentLink.Extra["url"]!.ToString());
+        }
+
+        [Fact]
+        public void PaymentLink_WithoutLink_IsJustTheFlag()
+        {
+            // Real sandbox shape: {"payment_link":{"has_payment_link":false}}
+            var product = JsonConvert.DeserializeObject<ProductResponse>(
+                "{\"id\":1,\"product_name\":\"x\",\"price\":1,\"payment_link\":{\"has_payment_link\":false}}")!;
+
+            Assert.False(product.PaymentLink.HasPaymentLink);
+            Assert.Null(product.PaymentLink.Extra);
         }
 
         [Fact]

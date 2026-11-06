@@ -77,9 +77,10 @@ namespace Tahsilat.NET.Models.Responses
         public List<TimelineEntry> Timeline { get; set; }
 
         /// <summary>
-        /// Payment link bound to the customer, when one exists.
+        /// Payment link block: <c>HasPaymentLink</c> tells whether a link is bound
+        /// to the customer; the link's fields are in <c>Extra</c>.
         /// </summary>
         [JsonProperty("payment_link")]
-        public string PaymentLink { get; set; }
+        public PaymentLinkInfo PaymentLink { get; set; }
     }
 }

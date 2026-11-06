@@ -11,9 +11,10 @@ namespace Tahsilat.NET.Tests
         public async Task CustomerSearch_SendsFiltersEncodedInTheQueryString()
         {
             var (client, http) = TestClient.WithToken();
+            // meta shape as the sandbox returns it, plus an unknown field.
             http.Enqueue(HttpStatusCode.OK,
-                "{\"status\":true,\"data\":{\"meta\":{\"total\":1,\"page\":1,\"limit\":10,\"next_cursor\":\"abc\"}," +
-                "\"customers\":[{\"id\":9,\"name\":\"Ayşe\",\"email\":\"ayse@mail.com\"}]}}");
+                "{\"status\":true,\"data\":{\"meta\":{\"total\":1,\"limit\":10,\"page\":1,\"total_page\":1,\"sort\":null,\"duration\":null,\"next_cursor\":\"abc\"}," +
+                "\"customers\":[{\"id\":9,\"name\":\"Ayşe\",\"email\":\"ayse@mail.com\",\"payment_link\":{\"has_payment_link\":false}}]}}");
 
             var page = await client.Customers.SearchAsync(new CustomerSearchRequest
             {
@@ -51,9 +52,12 @@ namespace Tahsilat.NET.Tests
             Assert.Equal(1, page.Meta.Total);
             Assert.Equal(1, page.Meta.Page);
             Assert.Equal(10, page.Meta.Limit);
+            Assert.Equal(1, page.Meta.TotalPage);
+            Assert.Null(page.Meta.Sort);
             Assert.Equal("abc", page.Meta.Extra["next_cursor"]!.ToString());
             Assert.Single(page.Customers);
             Assert.Equal(9, page.Customers[0].Id);
+            Assert.False(page.Customers[0].PaymentLink.HasPaymentLink);
         }
 
         [Fact]
