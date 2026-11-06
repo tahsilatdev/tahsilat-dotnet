@@ -52,22 +52,32 @@ namespace Tahsilat.NET.Tests
             };
         }
 
+        private readonly object _gate = new();
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var body = request.Content == null ? null : await request.Content.ReadAsStringAsync(cancellationToken);
 
-            Requests.Add(new RecordedRequest(
-                request.Method,
-                request.RequestUri!,
-                request.Headers.Authorization?.Parameter,
-                request.Content?.Headers.ContentType?.ToString(),
-                body,
-                request.Headers.UserAgent.ToString()));
+            Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> responder;
 
-            if (_responders.Count == 0)
-                throw new InvalidOperationException($"No response queued for {request.Method} {request.RequestUri}");
+            // Tests fire concurrent requests; Queue<T> and List<T> are not thread-safe.
+            lock (_gate)
+            {
+                Requests.Add(new RecordedRequest(
+                    request.Method,
+                    request.RequestUri!,
+                    request.Headers.Authorization?.Parameter,
+                    request.Content?.Headers.ContentType?.ToString(),
+                    body,
+                    request.Headers.UserAgent.ToString()));
 
-            return await _responders.Dequeue()(request, cancellationToken);
+                if (_responders.Count == 0)
+                    throw new InvalidOperationException($"No response queued for {request.Method} {request.RequestUri}");
+
+                responder = _responders.Dequeue();
+            }
+
+            return await responder(request, cancellationToken);
         }
     }
 
