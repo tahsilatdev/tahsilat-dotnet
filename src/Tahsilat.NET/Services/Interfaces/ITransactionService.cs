@@ -13,7 +13,7 @@ namespace Tahsilat.NET.Services.Interfaces
         Task<ApiResponse<RefundResponse>> RefundAsync(RefundCreateRequest request, CancellationToken ct = default);
 
         TransactionResult Retrieve(long transactionId);
-        PreAuthResolveResponse ResolvePreAuth(PreAuthResolveRequest request);
+        ApiResponse<PreAuthResolveResponse> ResolvePreAuth(PreAuthResolveRequest request);
         ApiResponse<RefundResponse> Refund(RefundCreateRequest request);
     }
 }

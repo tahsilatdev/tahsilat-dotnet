@@ -41,11 +41,11 @@ namespace Tahsilat.NET.Services.Implementations
             return response?.Data;
         }
 
-        public PreAuthResolveResponse ResolvePreAuth(PreAuthResolveRequest request)
+        public ApiResponse<PreAuthResolveResponse> ResolvePreAuth(PreAuthResolveRequest request)
         {
             var httpRequest = CreatePost("transaction/resolve-pre-auth", request);
             var response = _http.SendAndRead<ApiResponse<PreAuthResolveResponse>>(httpRequest);
-            return response?.Data;
+            return response;
         }
 
         public ApiResponse<RefundResponse> Refund(RefundCreateRequest request)
