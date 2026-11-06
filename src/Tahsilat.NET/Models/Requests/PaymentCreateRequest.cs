@@ -67,5 +67,30 @@ namespace Tahsilat.NET.Models.Requests
         /// </summary>
         [JsonProperty("description")]
         public string? Description { get; set; }
+
+        /// <summary>
+        /// POS definition that will collect a subscription payment. Required when
+        /// the merchant has more than one subscription-capable POS (the API answers
+        /// 422 otherwise); optional with a single one. Only meaningful when
+        /// <see cref="ProductIds"/> contains a subscription product: a subscription
+        /// cannot be started from inline <see cref="Products"/>.
+        /// </summary>
+        [JsonProperty("subscription_credential_id")]
+        public long? SubscriptionCredentialId { get; set; }
+
+        /// <summary>
+        /// White label only: collect the card details on your own page instead of
+        /// the Tahsilat payment page. Requires the white label permission on the
+        /// merchant account.
+        /// </summary>
+        [JsonProperty("white_label")]
+        public bool? WhiteLabel { get; set; }
+
+        /// <summary>
+        /// White label only: number of installments. Ignored unless
+        /// <see cref="WhiteLabel"/> is true. Not allowed with subscription products.
+        /// </summary>
+        [JsonProperty("installment_count")]
+        public int? InstallmentCount { get; set; }
     }
 }

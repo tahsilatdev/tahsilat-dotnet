@@ -72,6 +72,14 @@ namespace Tahsilat.NET.Models.Responses
         [JsonProperty("formatted_charged_amount")]
         public string FormattedChargedAmount { get; set; }
 
+        /// <summary>
+        /// Subscription this transaction belongs to; null for ordinary payments.
+        /// Recurring charges arrive as separate transactions with their own
+        /// transaction_id and an increasing <see cref="SubscriptionInfo.CycleNumber"/>.
+        /// </summary>
+        [JsonProperty("subscription")]
+        public SubscriptionInfo Subscription { get; set; }
+
         public decimal GetChargedAmountDecimal()
         {
             return (ChargedAmount.HasValue ? ChargedAmount.Value : Amount) / 100m;

@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net.Http;
 using System.Reflection;
 
@@ -93,8 +94,16 @@ namespace Tahsilat.NET.Infrastructure.Http
             if (value is bool b)
                 return b ? "1" : "0";
 
+            // The API expects numeric codes: BillingInterval.Month must go as "3",
+            // not "Month".
+            if (value is Enum e)
+                return Convert.ToInt64(e, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
+
             if (value is DateTime dt)
                 return dt.ToString("o");
+
+            if (value is IFormattable f)
+                return f.ToString(null, CultureInfo.InvariantCulture);
 
             return value?.ToString() ?? string.Empty;
         }

@@ -191,5 +191,56 @@ namespace Tahsilat.NET.Extensions
         }
 
         #endregion
+
+        #region Subscription Checks
+
+        /// <summary>
+        /// Checks whether the transaction belongs to a subscription.
+        /// </summary>
+        public static bool HasSubscription(this TransactionResult result)
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            return result.Subscription != null;
+        }
+
+        /// <summary>
+        /// Subscription ID, or null for a non-subscription transaction.
+        /// </summary>
+        public static long? GetSubscriptionId(this TransactionResult result)
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            return result.Subscription?.SubscriptionId;
+        }
+
+        /// <summary>
+        /// Billing cycle number (0 = initial 3D Secure payment), or null for a
+        /// non-subscription transaction.
+        /// </summary>
+        public static int? GetSubscriptionCycleNumber(this TransactionResult result)
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            return result.Subscription?.CycleNumber;
+        }
+
+        /// <summary>
+        /// True only for the initial 3D Secure payment that created the subscription.
+        /// </summary>
+        public static bool IsInitialSubscriptionPayment(this TransactionResult result)
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            return result.Subscription != null && result.Subscription.IsInitialPayment;
+        }
+
+        /// <summary>
+        /// Turkish subscription status label ("Aktif", "Ödeme Bekliyor", ...), or
+        /// null for a non-subscription transaction.
+        /// </summary>
+        public static string GetSubscriptionStatusTextTr(this TransactionResult result)
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            return result.Subscription?.GetStatusTextTr();
+        }
+
+        #endregion
     }
 }

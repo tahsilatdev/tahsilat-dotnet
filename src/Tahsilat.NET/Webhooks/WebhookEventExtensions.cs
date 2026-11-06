@@ -191,5 +191,56 @@ namespace Tahsilat.NET.Webhooks
         }
 
         #endregion
+
+        #region Subscription Checks
+
+        /// <summary>
+        /// Checks whether the transaction belongs to a subscription.
+        /// </summary>
+        public static bool HasSubscription(this WebhookEvent evt)
+        {
+            if (evt == null) throw new ArgumentNullException(nameof(evt));
+            return evt.Subscription != null;
+        }
+
+        /// <summary>
+        /// Subscription ID, or null for a non-subscription transaction.
+        /// </summary>
+        public static long? GetSubscriptionId(this WebhookEvent evt)
+        {
+            if (evt == null) throw new ArgumentNullException(nameof(evt));
+            return evt.Subscription?.SubscriptionId;
+        }
+
+        /// <summary>
+        /// Billing cycle number (0 = initial 3D Secure payment), or null for a
+        /// non-subscription transaction.
+        /// </summary>
+        public static int? GetSubscriptionCycleNumber(this WebhookEvent evt)
+        {
+            if (evt == null) throw new ArgumentNullException(nameof(evt));
+            return evt.Subscription?.CycleNumber;
+        }
+
+        /// <summary>
+        /// True only for the initial 3D Secure payment that created the subscription.
+        /// </summary>
+        public static bool IsInitialSubscriptionPayment(this WebhookEvent evt)
+        {
+            if (evt == null) throw new ArgumentNullException(nameof(evt));
+            return evt.Subscription != null && evt.Subscription.IsInitialPayment;
+        }
+
+        /// <summary>
+        /// Turkish subscription status label ("Aktif", "Ödeme Bekliyor", ...), or
+        /// null for a non-subscription transaction.
+        /// </summary>
+        public static string GetSubscriptionStatusTextTr(this WebhookEvent evt)
+        {
+            if (evt == null) throw new ArgumentNullException(nameof(evt));
+            return evt.Subscription?.GetStatusTextTr();
+        }
+
+        #endregion
     }
 }

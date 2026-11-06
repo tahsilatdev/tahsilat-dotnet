@@ -75,5 +75,11 @@ namespace Tahsilat.NET.Models.Responses
 
         [JsonProperty("timeline")]
         public List<TimelineEntry> Timeline { get; set; }
+
+        /// <summary>
+        /// Payment link bound to the customer, when one exists.
+        /// </summary>
+        [JsonProperty("payment_link")]
+        public string PaymentLink { get; set; }
     }
 }

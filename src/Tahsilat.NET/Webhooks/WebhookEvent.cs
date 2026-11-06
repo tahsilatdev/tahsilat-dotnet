@@ -49,5 +49,19 @@ namespace Tahsilat.NET.Webhooks
         public string EndAt { get; set; }
         [JsonProperty("metadata")]
         public List<MetadataEntry> Metadata { get; set; }
+
+        /// <summary>
+        /// Human-readable amount, e.g. "200.00".
+        /// </summary>
+        [JsonProperty("formatted_amount")]
+        public string FormattedAmount { get; set; }
+
+        /// <summary>
+        /// Subscription this transaction belongs to; null for ordinary payments.
+        /// The status reflects the subscription at delivery time, so a late webhook
+        /// may carry an older status than a fresh transaction query would.
+        /// </summary>
+        [JsonProperty("subscription")]
+        public SubscriptionInfo Subscription { get; set; }
     }
 }
