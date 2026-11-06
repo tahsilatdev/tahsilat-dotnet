@@ -13,12 +13,20 @@ namespace Tahsilat.NET.Infrastructure.Http
 {
     internal sealed class TokenManager : IDisposable
     {
+        /// <summary>
+        /// Access tokens live 10 minutes. A token is treated as expired this long
+        /// before its real expiry so a request already in flight never reaches the
+        /// server with a dead token.
+        /// </summary>
+        internal static readonly TimeSpan RefreshMargin = TimeSpan.FromSeconds(60);
+
         private readonly string _secretKey;
         private readonly HttpClient _httpClient;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-        private string? _accessToken;
-        private DateTime _expiresAt;
+        // Token and expiry are swapped together so a reader outside the lock never
+        // sees a new token paired with an old expiry.
+        private volatile CachedToken? _current;
 
         /// <summary>
         /// Initializes with an externally shared HttpClient.
@@ -35,20 +43,16 @@ namespace Tahsilat.NET.Infrastructure.Http
 
         public async Task<string> GetTokenAsync(CancellationToken cancellationToken = default)
         {
-            if (!string.IsNullOrEmpty(_accessToken) &&
-                DateTime.UtcNow < _expiresAt.AddMinutes(-5))
-            {
-                return _accessToken;
-            }
+            var cached = _current;
+            if (cached != null && cached.IsUsable)
+                return cached.Value;
 
             await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                if (!string.IsNullOrEmpty(_accessToken) &&
-                    DateTime.UtcNow < _expiresAt.AddMinutes(-5))
-                {
-                    return _accessToken;
-                }
+                cached = _current;
+                if (cached != null && cached.IsUsable)
+                    return cached.Value;
 
                 var request = new HttpRequestMessage(HttpMethod.Post, "token/get-token");
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _secretKey);
@@ -60,7 +64,7 @@ namespace Tahsilat.NET.Infrastructure.Http
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        ApiResponse<TokenData> errorResponse = null;
+                        ApiResponse<TokenData>? errorResponse = null;
                         try { errorResponse = JsonConvert.DeserializeObject<ApiResponse<TokenData>>(content); } catch { }
 
                         throw new TahsilatAuthenticationException(
@@ -71,7 +75,7 @@ namespace Tahsilat.NET.Infrastructure.Http
 
                     var result = JsonConvert.DeserializeObject<ApiResponse<TokenData>>(content);
 
-                    if (result == null || !result.Status || result.Data == null)
+                    if (result == null || !result.Status || result.Data == null || string.IsNullOrEmpty(result.Data.AccessToken))
                     {
                         throw new TahsilatAuthenticationException(
                             result?.Message ?? "Token response is invalid.",
@@ -79,10 +83,9 @@ namespace Tahsilat.NET.Infrastructure.Http
                             0);
                     }
 
-                    _accessToken = result.Data.AccessToken;
-                    _expiresAt = result.Data.ExpiresAt;
-
-                    return _accessToken;
+                    var fresh = new CachedToken(result.Data.AccessToken, result.Data.ExpiresAt);
+                    _current = fresh;
+                    return fresh.Value;
                 }
             }
             finally
@@ -102,6 +105,25 @@ namespace Tahsilat.NET.Infrastructure.Http
         public void Dispose()
         {
             _semaphore?.Dispose();
+        }
+
+        private sealed class CachedToken
+        {
+            public string Value { get; }
+
+            // DateTimeOffset keeps the server's "+03:00" offset, so the comparison
+            // below is between two absolute instants. The previous DateTime-based
+            // check compared a Kind=Local value against UtcNow and treated an
+            // expired token as valid for hours on a UTC+3 server.
+            public DateTimeOffset ExpiresAt { get; }
+
+            public CachedToken(string value, DateTimeOffset expiresAt)
+            {
+                Value = value;
+                ExpiresAt = expiresAt;
+            }
+
+            public bool IsUsable => DateTimeOffset.UtcNow < ExpiresAt - RefreshMargin;
         }
     }
 }

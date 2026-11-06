@@ -1,9 +1,5 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Tahsilat.NET.Models.Responses
 {
@@ -12,8 +8,12 @@ namespace Tahsilat.NET.Models.Responses
         [JsonProperty("access_token")]
         public string AccessToken { get; set; } = default!;
 
+        /// <summary>
+        /// Absolute expiry instant. The API sends an ISO 8601 value with an offset
+        /// (e.g. "2026-11-06T06:55:17+03:00"), which DateTimeOffset preserves.
+        /// </summary>
         [JsonProperty("expires_at")]
-        public DateTime ExpiresAt { get; set; }
+        public DateTimeOffset ExpiresAt { get; set; }
 
         [JsonProperty("supports_3d")]
         public bool Supports3d { get; set; }
