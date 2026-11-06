@@ -13,10 +13,9 @@ namespace Tahsilat.NET.IntegrationTests
         [Fact]
         public async Task BinLookup_ShouldReturnBankData()
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
             long bin_number = 48945540;
 
-            var res = await tahsilat.BinLookup.DetailAsync(bin_number);
+            var res = await Client.BinLookup.DetailAsync(bin_number);
 
             Assert.NotNull(res);
             Assert.Equal(bin_number, res.BinNumber);

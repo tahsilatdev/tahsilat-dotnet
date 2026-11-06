@@ -13,7 +13,6 @@ namespace Tahsilat.NET.IntegrationTests
         [Fact]
         public async Task CreateProduct_ShouldReturnProduct()
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
 
             var req = new ProductCreateRequest
             {
@@ -35,7 +34,7 @@ namespace Tahsilat.NET.IntegrationTests
                 }
             };
 
-            var res = await tahsilat.Products.CreateAsync(req);
+            var res = await Client.Products.CreateAsync(req);
 
             Assert.NotNull(res);
             Assert.True(res.Id > 0);

@@ -13,7 +13,6 @@ namespace Tahsilat.NET.IntegrationTests
         [Fact]
         public async Task ResolvePreAuth_ShouldReturnSuccess()
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
 
             long transactionId = 123154654658;
 
@@ -23,7 +22,7 @@ namespace Tahsilat.NET.IntegrationTests
                 Status = true
             };
 
-            var res = await tahsilat.Transactions.ResolvePreAuthAsync(req);
+            var res = await Client.Transactions.ResolvePreAuthAsync(req);
 
             Assert.True(res.Status);
         }

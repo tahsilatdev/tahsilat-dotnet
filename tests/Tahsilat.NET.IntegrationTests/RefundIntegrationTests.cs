@@ -14,7 +14,6 @@ namespace Tahsilat.NET.IntegrationTests
         [Fact]
         public async Task CreateRefund_ShouldReturnSuccessMessage()
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
 
             long transactionId = 38142216687547;
 
@@ -25,7 +24,7 @@ namespace Tahsilat.NET.IntegrationTests
                 Description = "Test iade işlemi."
             };
 
-            var response = await tahsilat.Transactions.RefundAsync(req);
+            var response = await Client.Transactions.RefundAsync(req);
 
             Assert.NotNull(response);
             Assert.True(response.Status);

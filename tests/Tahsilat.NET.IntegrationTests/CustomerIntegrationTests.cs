@@ -13,7 +13,6 @@ namespace Tahsilat.NET.IntegrationTests
         [Fact]
         public async Task CreateCustomer_ShouldReturnCustomerData()
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
 
             var req = new CustomerCreateRequest
             {
@@ -37,7 +36,7 @@ namespace Tahsilat.NET.IntegrationTests
                 }
             };
 
-            var result = await tahsilat.Customers.CreateAsync(req);
+            var result = await Client.Customers.CreateAsync(req);
 
             Assert.NotNull(result);
             Assert.True(result.Id > 0);

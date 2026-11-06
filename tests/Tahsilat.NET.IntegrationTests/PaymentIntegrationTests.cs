@@ -10,13 +10,11 @@ using Xunit;
 
 namespace Tahsilat.NET.IntegrationTests
 {
-    public class PaymentIntegrationTests
+    public class PaymentIntegrationTests : TestBase
     {
         [Fact]
         public async Task Create3dsPayment_ShouldReturnPaymentPageUrl()
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-
             var productRequest = new ProductCreateRequest
             {
                 ProductName = "Test Ürünü",
@@ -24,7 +22,7 @@ namespace Tahsilat.NET.IntegrationTests
                 Description = "Entegrasyon Test"
             };
 
-            var productResponse = await tahsilat.Products.CreateAsync(productRequest);
+            var productResponse = await Client.Products.CreateAsync(productRequest);
 
             var paymentRequest = new PaymentCreateRequest
             {
@@ -49,7 +47,7 @@ namespace Tahsilat.NET.IntegrationTests
                 }
             };
 
-            var response = await tahsilat.Payments.CreateAsync(paymentRequest);
+            var response = await Client.Payments.CreateAsync(paymentRequest);
 
             Assert.NotNull(response);
             Assert.True(response.TransactionId > 0);

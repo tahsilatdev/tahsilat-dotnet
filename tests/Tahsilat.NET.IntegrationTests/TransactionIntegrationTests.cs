@@ -12,10 +12,9 @@ namespace Tahsilat.NET.IntegrationTests
         [Fact]
         public async Task RetrieveTransaction_ShouldReturnValidData()
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
             long exampleTrxId = 83113981717821;
 
-            var result = await tahsilat.Transactions.RetrieveAsync(exampleTrxId);
+            var result = await Client.Transactions.RetrieveAsync(exampleTrxId);
 
             Assert.NotNull(result);
             Assert.Equal(exampleTrxId, result.TransactionId);

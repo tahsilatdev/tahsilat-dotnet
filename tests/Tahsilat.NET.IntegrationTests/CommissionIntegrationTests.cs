@@ -16,13 +16,12 @@ namespace Tahsilat.NET.IntegrationTests
         [Fact]
         public async Task GetCommissions_ShouldReturnList()
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
             var req = new CommissionSearchRequest
             {
                 BinNumber = 1234567
             };
 
-            var res = await tahsilat.Commissions.SearchAsync(req);
+            var res = await Client.Commissions.SearchAsync(req);
 
             Assert.NotNull(res);
             Assert.True(res.Count > 0);
@@ -39,10 +38,9 @@ namespace Tahsilat.NET.IntegrationTests
         [Fact]
         public async Task GetCommissions_ShouldExposeCardDimensionFields()
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
 
             // BIN gönderilmediğinde üye işyerinin tüm aktif POS'larının oranları döner
-            var res = await tahsilat.Commissions.SearchAsync();
+            var res = await Client.Commissions.SearchAsync();
 
             Assert.NotNull(res);
             Assert.True(res.Count > 0);
