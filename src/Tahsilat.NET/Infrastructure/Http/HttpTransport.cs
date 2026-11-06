@@ -105,12 +105,13 @@ namespace Tahsilat.NET.Infrastructure.Http
                 catch (HttpRequestException ex) when (canRetry && (safeToRepeat || IsConnectionFailure(ex)))
                 {
                     // Connection never established: the server saw nothing, any method may retry.
+                    _ = ex;
                 }
                 catch (HttpRequestException ex)
                 {
                     throw new TahsilatNetworkException("Could not reach the Tahsilat API: " + ex.Message, ex);
                 }
-                catch (IOException ex) when (canRetry && safeToRepeat)
+                catch (IOException) when (canRetry && safeToRepeat)
                 {
                     // Connection dropped while reading the response.
                 }
@@ -118,7 +119,7 @@ namespace Tahsilat.NET.Infrastructure.Http
                 {
                     throw new TahsilatNetworkException("Connection to the Tahsilat API was lost: " + ex.Message, ex);
                 }
-                catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested && canRetry && safeToRepeat)
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && canRetry && safeToRepeat)
                 {
                     // HttpClient timeout (not the caller's token). The server may still
                     // process the request, so only repeat-safe requests get here.
