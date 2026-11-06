@@ -53,6 +53,7 @@
                         <th>Para Birimi</th>
                         <th>Ödeme Durumu</th>
                         <th>İşlem Durumu</th>
+                        <th>Abonelik</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -83,6 +84,21 @@
                                 </span>
                             </td>
                             <td>@evt.TransactionStatusText</td>
+                            <td>
+                                @if (evt.HasSubscription())
+                                {
+                                    <code>@evt.GetSubscriptionId()</code>
+                                    <br />
+                                    <small>
+                                        Dönem @evt.GetSubscriptionCycleNumber()@(evt.IsInitialSubscriptionPayment() ? " (ilk ödeme)" : "")
+                                        · @evt.GetSubscriptionStatusTextTr()
+                                    </small>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
                         </tr>
                     }
                 </tbody>

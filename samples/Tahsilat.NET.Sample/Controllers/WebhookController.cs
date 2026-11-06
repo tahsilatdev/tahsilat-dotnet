@@ -34,6 +34,7 @@ namespace Tahsilat.NET.Sample.Controllers
 
             try
             {
+                // Varsayılan olarak 5 dakikadan eski webhook'lar reddedilir (replay koruması).
                 var webhookEvent = WebhookHandler.ConstructEvent(payloadBytes, signature, WebhookSecret);
 
                 if (webhookEvent.IsSuccess())
@@ -47,6 +48,18 @@ namespace Tahsilat.NET.Sample.Controllers
                     _logger.LogWarning(
                         "Ödeme başarısız. Transaction: {TransactionId}",
                         webhookEvent.TransactionId);
+                }
+
+                // Abonelik ödemelerinde "subscription" bloğu dolu gelir; dönem tahsilatları
+                // yeni bir transaction_id ile ayrı işlem olarak düşer (cycle_number >= 1).
+                if (webhookEvent.HasSubscription())
+                {
+                    _logger.LogInformation(
+                        "Abonelik ödemesi. Subscription: {SubscriptionId}, Dönem: {Cycle}, İlk ödeme: {IsInitial}, Durum: {Status}",
+                        webhookEvent.GetSubscriptionId(),
+                        webhookEvent.GetSubscriptionCycleNumber(),
+                        webhookEvent.IsInitialSubscriptionPayment(),
+                        webhookEvent.GetSubscriptionStatusTextTr());
                 }
 
                 _events.Add((DateTime.Now, webhookEvent));

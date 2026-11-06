@@ -45,6 +45,19 @@
 
                         <dt class="col-sm-4">Oluşturulma Tarihi</dt>
                         <dd class="col-sm-8">@res.FormattedCreatedAt</dd>
+
+                        <dt class="col-sm-4">Abonelik</dt>
+                        <dd class="col-sm-8">
+                            @if ((bool)res.IsRecurring)
+                            {
+                                <span class="badge bg-primary">@res.RecurringText</span>
+                                <small class="text-muted">(billing_interval=@res.BillingInterval, interval_count=@res.IntervalCount)</small>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Tek seferlik ürün</span>
+                            }
+                        </dd>
                     </dl>
                 </div>
             </div>
@@ -67,6 +80,35 @@
                 <label asp-for="Description" class="form-label">Açıklama</label>
                 <textarea asp-for="Description" class="form-control" rows="3"></textarea>
             </div>
+
+            <div class="card mb-3">
+                <div class="card-header">Abonelik (Tekrarlayan Ödeme)</div>
+                <div class="card-body">
+                    <div class="form-check mb-3">
+                        <input asp-for="IsRecurring" class="form-check-input" type="checkbox" value="true" id="isRecurring">
+                        <label class="form-check-label" for="isRecurring">Bu ürün bir abonelik ürünü</label>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="BillingInterval" class="form-label">Dönem</label>
+                            <select asp-for="BillingInterval" class="form-select"
+                                    asp-items="Html.GetEnumSelectList<Tahsilat.NET.Models.Enums.BillingInterval>()">
+                                <option value="">Seçin</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="IntervalCount" class="form-label">Dönem Çarpanı</label>
+                            <input asp-for="IntervalCount" type="number" min="1" max="366" class="form-control" placeholder="1">
+                            <small class="text-muted">Month + 2 = iki ayda bir</small>
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        Abonelik ürünü ile <code>ProductIds</code> üzerinden başlatılan ödeme, müşteri ilk 3D ödemeyi
+                        tamamladığında aboneliği otomatik oluşturur. Özellik hesabınızda etkin değilse API 4002/4007 döner.
+                    </small>
+                </div>
+            </div>
+
             <button type="submit" class="btn btn-success w-100">Ürün Oluştur</button>
         </form>
     </div>
