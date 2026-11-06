@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace Tahsilat.NET.Infrastructure.Security
 {
@@ -10,6 +11,12 @@ namespace Tahsilat.NET.Infrastructure.Security
         /// Default timestamp tolerance (replay protection): 5 minutes.
         /// </summary>
         public static readonly TimeSpan DefaultTolerance = TimeSpan.FromMinutes(5);
+
+        /// <summary>
+        /// Sentinel that disables the timestamp check entirely. Exposed to callers
+        /// as <see cref="Webhooks.WebhookHandler.DisableTimestampCheck"/>.
+        /// </summary>
+        public static readonly TimeSpan NoTimestampCheck = Timeout.InfiniteTimeSpan;
 
         /// <summary>
         /// Parses the X-Tahsilat-Signature header.
@@ -87,7 +94,10 @@ namespace Tahsilat.NET.Infrastructure.Security
         /// <param name="secretKey">Signing secret from the dashboard</param>
         /// <param name="payload">Request body (string)</param>
         /// <param name="signatureHeader">X-Tahsilat-Signature header value (t=...,v1=...)</param>
-        /// <param name="tolerance">Timestamp tolerance. If null, timestamp check is skipped. Default is 5 minutes.</param>
+        /// <param name="tolerance">
+        /// Timestamp tolerance. Null applies <see cref="DefaultTolerance"/> (5 minutes);
+        /// <see cref="NoTimestampCheck"/> skips the check.
+        /// </param>
         public static bool IsValid(string secretKey, string payload, string signatureHeader, TimeSpan? tolerance = null)
         {
             if (string.IsNullOrWhiteSpace(secretKey) ||
@@ -98,8 +108,7 @@ namespace Tahsilat.NET.Infrastructure.Security
             if (!ParseSignatureHeader(signatureHeader, out timestamp, out signature))
                 return false;
 
-            // Timestamp check (replay protection)
-            if (tolerance.HasValue && !IsTimestampValid(timestamp, tolerance.Value))
+            if (!IsTimestampValid(timestamp, tolerance))
                 return false;
 
             var expected = ComputeSignature(secretKey, timestamp, payload);
@@ -120,8 +129,7 @@ namespace Tahsilat.NET.Infrastructure.Security
             if (!ParseSignatureHeader(signatureHeader, out timestamp, out signature))
                 return false;
 
-            // Timestamp check (replay protection)
-            if (tolerance.HasValue && !IsTimestampValid(timestamp, tolerance.Value))
+            if (!IsTimestampValid(timestamp, tolerance))
                 return false;
 
             var expected = ComputeSignature(secretKey, timestamp, payloadBytes);
@@ -129,17 +137,23 @@ namespace Tahsilat.NET.Infrastructure.Security
         }
 
         /// <summary>
-        /// Checks whether the Unix timestamp is within the specified tolerance.
+        /// Replay protection: the Unix timestamp must be within the tolerance of now.
+        /// Null tolerance means the 5 minute default; the check is skipped only when
+        /// the caller explicitly passes <see cref="NoTimestampCheck"/>.
         /// </summary>
-        private static bool IsTimestampValid(string timestampStr, TimeSpan tolerance)
+        private static bool IsTimestampValid(string timestampStr, TimeSpan? tolerance)
         {
+            var effective = tolerance ?? DefaultTolerance;
+            if (effective == NoTimestampCheck)
+                return true;
+
             long timestamp;
             if (!long.TryParse(timestampStr, out timestamp))
                 return false;
 
             var now = GetUnixTimeSeconds();
             var diff = Math.Abs(now - timestamp);
-            return diff <= (long)tolerance.TotalSeconds;
+            return diff <= (long)effective.TotalSeconds;
         }
 
         /// <summary>

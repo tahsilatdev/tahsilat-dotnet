@@ -16,17 +16,31 @@ namespace Tahsilat.NET.Webhooks
         public const string SignatureHeaderName = "X-Tahsilat-Signature";
 
         /// <summary>
+        /// Timestamp tolerance applied when none is given: 5 minutes.
+        /// A webhook whose timestamp is further than this from the current time is
+        /// rejected, which stops a captured request from being replayed later.
+        /// </summary>
+        public static readonly TimeSpan DefaultTolerance = WebhookSignatureValidator.DefaultTolerance;
+
+        /// <summary>
+        /// Pass as <c>tolerance</c> to skip the timestamp check. The HMAC signature is
+        /// still verified. Only use this when your server clock cannot be trusted.
+        /// </summary>
+        public static readonly TimeSpan DisableTimestampCheck = WebhookSignatureValidator.NoTimestampCheck;
+
+        /// <summary>
         /// Constructs a webhook event from a string payload.
         /// Signature value is provided externally.
         /// </summary>
         /// <param name="payload">Request body (string)</param>
         /// <param name="signatureHeader">X-Tahsilat-Signature header value (t=...,v1=...)</param>
         /// <param name="webhookSecret">Webhook secret key from the dashboard</param>
-        /// <param name="tolerance">Timestamp tolerance. If null, timestamp check is skipped. Default is 5 minutes.</param>
+        /// <param name="tolerance">
+        /// Timestamp tolerance. Null applies <see cref="DefaultTolerance"/>;
+        /// <see cref="DisableTimestampCheck"/> skips the timestamp check.
+        /// </param>
         public static WebhookEvent ConstructEvent(string payload, string signatureHeader, string webhookSecret, TimeSpan? tolerance = null)
         {
-            // If tolerance is null, timestamp check is skipped.
-            // For replay protection: ConstructEvent(payload, sig, secret, TimeSpan.FromMinutes(5))
             if (string.IsNullOrWhiteSpace(signatureHeader))
                 throw new TahsilatWebhookException("Missing X-Tahsilat-Signature header.");
 
@@ -46,6 +60,10 @@ namespace Tahsilat.NET.Webhooks
         /// Signature value is provided externally.
         /// Prevents hash mismatches caused by encoding conversions.
         /// </summary>
+        /// <param name="tolerance">
+        /// Timestamp tolerance. Null applies <see cref="DefaultTolerance"/>;
+        /// <see cref="DisableTimestampCheck"/> skips the timestamp check.
+        /// </param>
         public static WebhookEvent ConstructEvent(byte[] payloadBytes, string signatureHeader, string webhookSecret, TimeSpan? tolerance = null)
         {
             if (string.IsNullOrWhiteSpace(signatureHeader))
@@ -71,7 +89,10 @@ namespace Tahsilat.NET.Webhooks
         /// <param name="payloadBytes">HTTP request body (raw bytes)</param>
         /// <param name="headers">HTTP request headers (key-value)</param>
         /// <param name="webhookSecret">Webhook secret key from the dashboard</param>
-        /// <param name="tolerance">Timestamp tolerance. If null, timestamp check is skipped. Default is 5 minutes.</param>
+        /// <param name="tolerance">
+        /// Timestamp tolerance. Null applies <see cref="DefaultTolerance"/>;
+        /// <see cref="DisableTimestampCheck"/> skips the timestamp check.
+        /// </param>
         public static WebhookEvent ConstructEvent(byte[] payloadBytes, IDictionary<string, string> headers, string webhookSecret, TimeSpan? tolerance = null)
         {
             string signatureHeader = null;
