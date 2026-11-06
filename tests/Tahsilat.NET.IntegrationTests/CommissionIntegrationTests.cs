@@ -16,9 +16,10 @@ namespace Tahsilat.NET.IntegrationTests
         [Fact]
         public async Task GetCommissions_ShouldReturnList()
         {
+            // API 8 haneli BIN ister.
             var req = new CommissionSearchRequest
             {
-                BinNumber = 1234567
+                BinNumber = 48945540
             };
 
             var res = await Client.Commissions.SearchAsync(req);
@@ -26,8 +27,11 @@ namespace Tahsilat.NET.IntegrationTests
             Assert.NotNull(res);
             Assert.True(res.Count > 0);
 
+            // Satırlarda "id" alanı gelmiyor (sandbox'ta doğrulandı); satır
+            // pos + installment + kart boyutlarıyla tekilleşir.
             var first = res.First();
-            Assert.True(first.Id > 0);
+            Assert.True(first.PosId > 0);
+            Assert.False(string.IsNullOrEmpty(first.InstallmentText));
             Assert.True(first.CommissionRate >= 0);
 
             // transaction_fee opsiyonel — varsa negatif olmamalı
@@ -55,9 +59,20 @@ namespace Tahsilat.NET.IntegrationTests
                 Assert.False(string.IsNullOrEmpty(c.InstallmentText));
             }
 
-            // Bir satır installment + card_type + is_on_us + is_foreign ile tekilleşir
+            // Bir satır pos + installment + card_type + is_on_us + is_foreign + kart ailesi
+            // + kart segmenti ile tekilleşir (sandbox'ta doğrulandı: aynı taksit için
+            // axess/bonus/world... × consumer/business satırları ve ailesiz genel satır gelir).
             var duplicates = res
-                .GroupBy(c => new { c.PosId, c.Installment, c.CardType, c.IsOnUs, c.IsForeign })
+                .GroupBy(c => new
+                {
+                    c.PosId,
+                    c.Installment,
+                    c.CardType,
+                    c.IsOnUs,
+                    c.IsForeign,
+                    Family = c.CardFamily?.Slug,
+                    Segment = c.CardSegmentType?.Slug
+                })
                 .Where(g => g.Count() > 1)
                 .ToList();
 

@@ -105,18 +105,15 @@ namespace Tahsilat.NET.Infrastructure.Http
 
                 var raw = await _transport.SendAsync(request, safeToRepeat: true, cancellationToken).ConfigureAwait(false);
 
+                // Same mapping as every other endpoint: a rate-limited token endpoint
+                // is a TahsilatRateLimitException, not an authentication failure.
+                if (!raw.IsSuccess)
+                    throw ApiErrors.ForStatus(raw, ApiErrors.Parse(raw.Body));
+
                 ApiResponse<TokenData>? result = null;
                 if (!string.IsNullOrWhiteSpace(raw.Body))
                 {
                     try { result = JsonConvert.DeserializeObject<ApiResponse<TokenData>>(raw.Body!); } catch { }
-                }
-
-                if (!raw.IsSuccess)
-                {
-                    throw new TahsilatAuthenticationException(
-                        result?.Message ?? $"Token retrieval failed. Status: {raw.StatusCode}",
-                        result?.ErrorCode,
-                        (int)raw.StatusCode);
                 }
 
                 if (result == null || !result.Status || result.Data == null || string.IsNullOrEmpty(result.Data.AccessToken))

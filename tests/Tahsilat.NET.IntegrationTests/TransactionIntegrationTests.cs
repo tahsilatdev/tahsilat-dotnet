@@ -9,15 +9,20 @@ namespace Tahsilat.NET.IntegrationTests
 {
     public class TransactionIntegrationTests : TestBase
     {
+        /// <summary>
+        /// Needs any existing sandbox transaction in Tahsilat:TransactionId.
+        /// Without it the test returns.
+        /// </summary>
         [Fact]
         public async Task RetrieveTransaction_ShouldReturnValidData()
         {
-            long exampleTrxId = 83113981717821;
+            if (KnownTransactionId == 0)
+                return;
 
-            var result = await Client.Transactions.RetrieveAsync(exampleTrxId);
+            var result = await Client.Transactions.RetrieveAsync(KnownTransactionId);
 
             Assert.NotNull(result);
-            Assert.Equal(exampleTrxId, result.TransactionId);
+            Assert.Equal(KnownTransactionId, result.TransactionId);
             Assert.True(result.Amount > 0);
 
             // charged_amount: komisyon müşteriye yansımadıysa null gelebilir
@@ -30,6 +35,14 @@ namespace Tahsilat.NET.IntegrationTests
             // helper: charged_amount varsa onu, yoksa amount'u döner
             var decimal_ = result.GetChargedAmountDecimal();
             Assert.True(decimal_ > 0);
+        }
+
+        [Fact]
+        public async Task RetrieveUnknownTransaction_ShouldThrowNotFound()
+        {
+            // Var olmayan 14 haneli bir ID: API 404 döner, SDK NotFound'a çevirir.
+            await Assert.ThrowsAsync<Tahsilat.NET.Exceptions.TahsilatNotFoundException>(
+                () => Client.Transactions.RetrieveAsync(10000000000001));
         }
     }
 }

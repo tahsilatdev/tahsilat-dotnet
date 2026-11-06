@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tahsilat.NET.Configuration;
 using Tahsilat.NET.Exceptions;
-using Tahsilat.NET.Models.Common;
 
 namespace Tahsilat.NET.Infrastructure.Http
 {
@@ -90,13 +89,13 @@ namespace Tahsilat.NET.Infrastructure.Http
         /// </summary>
         private static TResponse Read<TResponse>(RawResponse raw)
         {
-            var err = ParseError(raw.Body);
+            var err = ApiErrors.Parse(raw.Body);
 
             if (!raw.IsSuccess)
-                ThrowForError(raw, err);
+                throw ApiErrors.ForStatus(raw, err);
 
             if (err != null && err.Status == false)
-                throw new TahsilatApiException(FormatMessage(err, raw.StatusCode), (int)raw.StatusCode, err.ErrorCode);
+                throw new TahsilatApiException(ApiErrors.FormatMessage(err, raw.StatusCode), (int)raw.StatusCode, err.ErrorCode);
 
             if (string.IsNullOrWhiteSpace(raw.Body))
                 return default!;
@@ -116,64 +115,7 @@ namespace Tahsilat.NET.Infrastructure.Http
             if (raw.StatusCode != HttpStatusCode.Forbidden)
                 return false;
 
-            return string.Equals(ParseError(raw.Body)?.ErrorCode, ErrorCodeInvalidToken, StringComparison.Ordinal);
-        }
-
-        private static ApiErrorResponse? ParseError(string? body)
-        {
-            if (string.IsNullOrWhiteSpace(body))
-                return null;
-
-            try { return JsonConvert.DeserializeObject<ApiErrorResponse>(body!); }
-            catch { return null; }
-        }
-
-        private static string FormatMessage(ApiErrorResponse? err, HttpStatusCode code)
-        {
-            var message = err?.Message ?? $"Tahsilat API error ({(int)code})";
-
-            var errorList = err?.GetErrorList();
-            if (errorList != null && errorList.Count > 0)
-                message = $"{message} [{string.Join("; ", errorList)}]";
-
-            return message;
-        }
-
-        private static void ThrowForError(RawResponse raw, ApiErrorResponse? err)
-        {
-            var code = raw.StatusCode;
-            var errCode = err?.ErrorCode;
-            var message = FormatMessage(err, code);
-
-            switch (code)
-            {
-                case HttpStatusCode.BadRequest:
-                case (HttpStatusCode)422:
-                    throw new TahsilatValidationException(message, errCode, err?.GetErrorDictionary());
-
-                case HttpStatusCode.Unauthorized:
-                case HttpStatusCode.Forbidden:
-                    throw new TahsilatAuthenticationException(message, errCode, (int)code);
-
-                case (HttpStatusCode)402:
-                    throw new TahsilatPaymentException(message, errCode);
-
-                case HttpStatusCode.NotFound:
-                    throw new TahsilatNotFoundException(message, errCode);
-
-                case HttpStatusCode.Conflict:
-                    throw new TahsilatConflictException(message, errCode);
-
-                case (HttpStatusCode)429:
-                    var retry = (int)(raw.RetryAfter?.TotalSeconds ?? 0);
-                    throw new TahsilatRateLimitException(message, retry, errCode);
-
-                case (HttpStatusCode)424:
-                    throw new TahsilatNetworkException(message, errCode);
-
-                default:
-                    throw new TahsilatApiException(message, (int)code, errCode);
-            }
+            return string.Equals(ApiErrors.Parse(raw.Body)?.ErrorCode, ErrorCodeInvalidToken, StringComparison.Ordinal);
         }
 
         public void Dispose()

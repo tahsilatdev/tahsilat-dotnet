@@ -180,6 +180,19 @@ namespace Tahsilat.NET.Tests
         }
 
         [Fact]
+        public async Task RateLimitedTokenEndpoint_ThrowsRateLimitException()
+        {
+            // Seen on the sandbox: too many token requests per minute answer 429.
+            var (client, http) = TestClient.Create();
+            http.Enqueue((HttpStatusCode)429, "{\"status\":false,\"message\":\"Çok fazla istekte bulundunuz. Lütfen 1 dakika sonra tekrar deneyiniz.\"}");
+
+            var ex = await Assert.ThrowsAsync<TahsilatRateLimitException>(() => client.Commissions.SearchAsync());
+
+            Assert.Contains("1 dakika", ex.Message);
+            Assert.Single(http.Requests);
+        }
+
+        [Fact]
         public async Task ConcurrentFirstCalls_MintOneToken()
         {
             var (client, http) = TestClient.Create();

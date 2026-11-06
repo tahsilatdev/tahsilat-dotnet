@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tahsilat.NET.Models.Requests;
+using Tahsilat.NET.Models.Responses;
 using Xunit;
 
 namespace Tahsilat.NET.IntegrationTests
@@ -19,7 +20,7 @@ namespace Tahsilat.NET.IntegrationTests
                 Name = "Test",
                 LastName = "User",
                 Email = "testuser@mail.com",
-                Phone = "+901234567890",
+                Phone = "5321234567",
                 Country = "TR",
                 Metadata = new()
                 {
@@ -48,6 +49,10 @@ namespace Tahsilat.NET.IntegrationTests
 
             if (!string.IsNullOrEmpty(result.FormattedUpdatedAt))
                 Assert.True(result.FormattedUpdatedAt.Length > 0);
+
+            // payment_link bloğu create cevabında gelmiyor, yalnız arama satırlarında var.
+            // Sandbox'ı kirletme
+            await Client.Customers.DeleteAsync(result.Id);
         }
 
         [Fact]
@@ -60,24 +65,31 @@ namespace Tahsilat.NET.IntegrationTests
                 Name = "Search",
                 LastName = "Test",
                 Email = email,
-                Phone = "+901234567890",
+                Phone = "5321234567",
                 Country = "TR"
             });
 
-            // Arama cevabı liste değil { meta, customers } nesnesi; parametreler
-            // sorgu dizesinde gider ve URL-encode edilir.
-            var page = await Client.Customers.SearchAsync(new CustomerSearchRequest
+            try
             {
-                Email = email,
-                Limit = 10
-            });
+                // Arama cevabı liste değil { meta, customers } nesnesi; parametreler
+                // sorgu dizesinde gider ve URL-encode edilir. Arama indeksi create'in
+                // hemen ardından güncel olmayabilir, kısa süre beklenir.
+                CustomerSearchResponse page = null;
+                var found = await EventuallyAsync(async () =>
+                {
+                    page = await Client.Customers.SearchAsync(new CustomerSearchRequest { Email = email, Limit = 10 });
+                    return page?.Customers != null && page.Customers.Any(c => c.Id == created.Id);
+                });
 
-            Assert.NotNull(page);
-            Assert.NotNull(page.Meta);
-            Assert.NotNull(page.Customers);
-            Assert.Contains(page.Customers, c => c.Id == created.Id);
-
-            await Client.Customers.DeleteAsync(created.Id);
+                Assert.NotNull(page);
+                Assert.NotNull(page.Meta);
+                Assert.True(page.Meta.Total >= 1);
+                Assert.True(found, $"Customer {created.Id} was not returned by email search within the wait window.");
+            }
+            finally
+            {
+                await Client.Customers.DeleteAsync(created.Id);
+            }
         }
 
         [Fact]
@@ -88,7 +100,7 @@ namespace Tahsilat.NET.IntegrationTests
                 Name = "Delete",
                 LastName = "Test",
                 Email = "deletetest@mail.com",
-                Phone = "+901234567890",
+                Phone = "5321234567",
                 Country = "TR"
             });
 

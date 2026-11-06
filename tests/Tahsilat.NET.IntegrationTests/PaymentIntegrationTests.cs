@@ -47,11 +47,19 @@ namespace Tahsilat.NET.IntegrationTests
                 }
             };
 
-            var response = await Client.Payments.CreateAsync(paymentRequest);
+            try
+            {
+                var response = await Client.Payments.CreateAsync(paymentRequest);
 
-            Assert.NotNull(response);
-            Assert.True(response.TransactionId > 0);
-            Assert.False(string.IsNullOrEmpty(response.PaymentPageUrl));
+                Assert.NotNull(response);
+                Assert.True(response.TransactionId > 0);
+                Assert.False(string.IsNullOrEmpty(response.PaymentPageUrl));
+            }
+            finally
+            {
+                // Ödeme sayfası oluşturuldu ama ödenmedi; test ürününü sandbox'ta bırakma.
+                await Client.Products.DeleteAsync(productResponse.Id);
+            }
         }
     }
 }

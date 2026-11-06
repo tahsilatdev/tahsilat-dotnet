@@ -11,19 +11,25 @@ namespace Tahsilat.NET.IntegrationTests
 {
     public class RefundIntegrationTests : TestBase
     {
+        /// <summary>
+        /// Needs a completed, refundable sandbox payment: put its transaction_id
+        /// into Tahsilat:RefundableTransactionId. Without it the test returns.
+        /// Each run refunds 30,00 TL of it, so pick a payment large enough.
+        /// </summary>
         [Fact]
         public async Task CreateRefund_ShouldReturnSuccessMessage()
         {
-
-            long transactionId = 38142216687547;
+            if (RefundableTransactionId == 0)
+                return;
 
             var req = new RefundCreateRequest
             {
-                TransactionId = transactionId,
+                TransactionId = RefundableTransactionId,
                 Amount = 3000,
                 Description = "Test iade işlemi."
             };
 
+            // 1.2.0: banka reddederse Status=false dönmez, TahsilatApiException fırlar.
             var response = await Client.Transactions.RefundAsync(req);
 
             Assert.NotNull(response);

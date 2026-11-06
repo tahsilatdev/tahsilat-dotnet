@@ -580,7 +580,7 @@ var filtered = await tahsilat.Commissions.SearchAsync(new CommissionSearchReques
 
 #### Yanıt Satırındaki Kart Boyutu Alanları
 
-Aynı komisyon oranı listede birden fazla kez görünebilir. Bunun sebebi, her satırın **farklı bir kart senaryosuna** ait olmasıdır. Bir satır şu kombinasyonla tekilleşir: `Installment` + `CardType` + `IsOnUs` + `IsForeign`.
+Aynı komisyon oranı listede birden fazla kez görünebilir. Bunun sebebi, her satırın **farklı bir kart senaryosuna** ait olmasıdır. Bir satır şu kombinasyonla tekilleşir: `PosId` + `Installment` + `CardType` + `IsOnUs` + `IsForeign` + `CardFamily.Slug` + `CardSegmentType.Slug`. Aynı taksit için kart ailesi (`axess`, `bonus`, `world`...) ve segment (`consumer`, `business`) bazında ayrı satırlar, ayrıca ailesi olmayan genel bir satır gelir.
 
 | Alan | Tip | Anlam |
 |------|-----|-------|

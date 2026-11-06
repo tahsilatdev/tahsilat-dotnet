@@ -47,6 +47,37 @@ namespace Tahsilat.NET.IntegrationTests
             // product_image_url opsiyonel — görsel yüklenmemişse null gelir
             if (!string.IsNullOrEmpty(res.ProductImageUrl))
                 Assert.True(res.ProductImageUrl.Length > 0);
+
+            Assert.False(res.IsRecurring);
+
+            // payment_link bloğu create cevabında gelmiyor, yalnız arama satırlarında var.
+            // Sandbox'ı kirletme
+            await Client.Products.DeleteAsync(res.Id);
+        }
+
+        [Fact]
+        public async Task CreateSubscriptionProduct_ShouldReturnRecurringFields()
+        {
+            var res = await Client.Products.CreateAsync(new ProductCreateRequest
+            {
+                ProductName = "Premium Üyelik (test)",
+                Price = 49900,
+                IsRecurring = true,
+                BillingInterval = Tahsilat.NET.Models.Enums.BillingInterval.Month,
+                IntervalCount = 1
+            });
+
+            try
+            {
+                Assert.True(res.IsRecurring);
+                Assert.Equal((int)Tahsilat.NET.Models.Enums.BillingInterval.Month, res.BillingInterval);
+                Assert.Equal(1, res.IntervalCount);
+                Assert.False(string.IsNullOrEmpty(res.RecurringText)); // "Aylık"
+            }
+            finally
+            {
+                await Client.Products.DeleteAsync(res.Id);
+            }
         }
 
         [Fact]
@@ -59,20 +90,27 @@ namespace Tahsilat.NET.IntegrationTests
                 Description = "Integration Test Product (search)"
             });
 
-            // Arama cevabı liste değil { meta, products } nesnesi; parametreler
-            // sorgu dizesinde gider.
-            var page = await Client.Products.SearchAsync(new ProductSearchRequest
+            try
             {
-                ProductId = created.Id,
-                Limit = 10
-            });
+                // Arama cevabı liste değil { meta, products } nesnesi; parametreler
+                // sorgu dizesinde gider. Arama indeksi create'in hemen ardından
+                // güncel olmayabilir, kısa süre beklenir.
+                Tahsilat.NET.Models.Responses.ProductSearchResponse page = null;
+                var found = await EventuallyAsync(async () =>
+                {
+                    page = await Client.Products.SearchAsync(new ProductSearchRequest { ProductId = created.Id, Limit = 10 });
+                    return page?.Products != null && page.Products.Any(p => p.Id == created.Id);
+                });
 
-            Assert.NotNull(page);
-            Assert.NotNull(page.Meta);
-            Assert.NotNull(page.Products);
-            Assert.Contains(page.Products, p => p.Id == created.Id);
-
-            await Client.Products.DeleteAsync(created.Id);
+                Assert.NotNull(page);
+                Assert.NotNull(page.Meta);
+                Assert.True(page.Meta.Total >= 1);
+                Assert.True(found, $"Product {created.Id} was not returned by product_id search within the wait window.");
+            }
+            finally
+            {
+                await Client.Products.DeleteAsync(created.Id);
+            }
         }
 
         [Fact]

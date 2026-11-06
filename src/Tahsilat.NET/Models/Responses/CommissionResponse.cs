@@ -4,6 +4,11 @@ namespace Tahsilat.NET.Models.Responses
 {
     public class CommissionResponse
     {
+        /// <summary>
+        /// The API does not currently send an id for commission rows, so this is 0.
+        /// A row is identified by PosId + Installment + CardType + IsOnUs + IsForeign
+        /// + CardFamily + CardSegmentType.
+        /// </summary>
         [JsonProperty("id")]
         public long Id { get; set; }
 
