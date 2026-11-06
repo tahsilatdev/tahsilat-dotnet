@@ -5,6 +5,7 @@ using Tahsilat.NET.Abstractions;
 using Tahsilat.NET.Exceptions;
 using Tahsilat.NET.Extensions;
 using Tahsilat.NET.Models.Requests;
+using Tahsilat.NET.Models.Responses;
 using Tahsilat.NET.Sample.Models;
 
 namespace Tahsilat.NET.Sample.Controllers;
@@ -22,67 +23,63 @@ public class HomeController : Controller
 
     // ---------------------------------------------------------------- Mağaza demo
 
-    public IActionResult Index()
+    /// <summary>
+    /// Mağaza: sandbox'taki kayıtlı ürünler listelenir, her biri doğrudan satın alınabilir.
+    /// </summary>
+    public async Task<IActionResult> Index()
     {
-        ViewBag.Product = "iPhone 15 Pro Max";
-        ViewBag.Price = 85000;
-        return View();
+        var products = new List<ProductResponse>();
+        try
+        {
+            var page = await _tahsilat.Products.SearchAsync(new ProductSearchRequest { Limit = 50 });
+            products = page?.Products ?? new List<ProductResponse>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ürünler listelenemedi.");
+            ViewBag.Error = Describe(ex);
+        }
+
+        return View(products);
     }
 
     /// <summary>
-    /// Demo akışı: müşteri + ürün oluştur, kayıtlı ürün ID'si ile ödeme başlat,
-    /// müşteriyi ödeme sayfasına yönlendir.
+    /// Seçilen kayıtlı ürün için 3DS ödeme başlatır ve müşteriyi ödeme sayfasına
+    /// yönlendirir. Ürün abonelik ürünüyse ilk 3D ödeme tamamlanınca abonelik
+    /// otomatik oluşur.
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> Checkout()
+    public async Task<IActionResult> Checkout(long productId)
     {
         try
         {
-            var customer = await _tahsilat.Customers.CreateAsync(new CustomerCreateRequest
-            {
-                Name = "NET TEST",
-                LastName = "SDK Test",
-                Email = "sdk-test@example.com",
-                Phone = "5434589632",
-                Country = "TR",
-                City = "İstanbul",
-                District = "Sarıyer",
-                Address = "Sarıyer/İstanbul",
-                ZipCode = "34000",
-                Metadata = new()
-                {
-                    new Dictionary<string, object> { ["customer_type"] = "premium", ["source"] = "tahsilat-dotnet sample" }
-                }
-            });
-
-            var product = await _tahsilat.Products.CreateAsync(new ProductCreateRequest
-            {
-                ProductName = "iPhone 15 Pro Max",
-                Price = 8500000,
-                Description = "256GB Titanium"
-            });
+            var product = await _tahsilat.Products.GetAsync(productId);
 
             var payment = await _tahsilat.Payments.CreateAsync(new PaymentCreateRequest
             {
-                Currency = "TRY",
-                Amount = 8500000,
-                CustomerId = customer.Id,
+                Currency = string.IsNullOrEmpty(product.CurrencyCode) ? "TRY" : product.CurrencyCode,
+                Amount = product.Price,                       // ürün toplamıyla eşleşmeli
                 ProductIds = new List<long> { product.Id },
+                Description = $"Sample mağaza: {product.ProductName}",
+                Metadata = new()
+                {
+                    new Dictionary<string, object> { ["source"] = "tahsilat-dotnet sample", ["product_id"] = product.Id }
+                },
                 RedirectUrl = Url.Action("PaymentResult", "Home", null, Request.Scheme)
             });
 
             if (!string.IsNullOrEmpty(payment.PaymentPageUrl))
                 return Redirect(payment.PaymentPageUrl);
 
-            ViewBag.Error = "Ödeme sayfası adresi dönmedi.";
+            TempData["Error"] = "Ödeme sayfası adresi dönmedi.";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Ödeme oluşturma hatası.");
-            ViewBag.Error = Describe(ex);
+            TempData["Error"] = Describe(ex);
         }
 
-        return View("Index");
+        return RedirectToAction(nameof(Index));
     }
 
     /// <summary>

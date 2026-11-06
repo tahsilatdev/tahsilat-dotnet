@@ -1,27 +1,69 @@
-﻿@{
-    ViewData["Title"] = "Store";
+﻿@using Tahsilat.NET.Models.Responses
+@model List<ProductResponse>
+@{
+    ViewData["Title"] = "Mağaza";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Test Uygulaması</h1>
-    
-    @if (ViewBag.Error != null)
-    {
-        <div class="alert alert-danger">
-            @ViewBag.Error
-        </div>
-    }
+<div class="text-center mb-4">
+    <h1 class="display-4">Test Mağazası</h1>
+    <p class="text-muted">
+        Sandbox'taki kayıtlı ürünler. "Satın Al" seçilen ürün için <code>ProductIds</code> ile 3DS ödeme başlatır
+        ve sizi ödeme sayfasına yönlendirir; sonuç <code>/Home/PaymentResult</code>'a döner, webhook
+        <a asp-controller="Webhook" asp-action="Index">Webhook Kayıtları</a>'na düşer.
+    </p>
 
-    <div class="card mx-auto" style="width: 18rem;">
-        <img src="https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-finish-select-202309-6-7inch-naturaltitanium?wid=5120&hei=2880&fmt=p-jpg&qlt=80&.v=1692845761595" class="card-img-top" alt="iPhone 15 Pro Max">
-        <div class="card-body">
-            <h5 class="card-title">@ViewBag.Product</h5>
-            <p class="card-text">Best iPhone ever made.</p>
-            <h3 class="card-text text-primary">@ViewBag.Price TL</h3>
-            
-            <form asp-action="Checkout" method="post">
-                <button type="submit" class="btn btn-primary btn-lg btn-block">Satın Al</button>
-            </form>
-        </div>
-    </div>
+    @if (TempData["Error"] != null) { <div class="alert alert-danger text-start">@TempData["Error"]</div> }
+    @if (ViewBag.Error != null) { <div class="alert alert-danger text-start">@ViewBag.Error</div> }
 </div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info text-center">
+        Henüz ürün yok. <a asp-action="CreateProduct">Ürün oluşturun</a>, sonra buradan satın alın.
+    </div>
+}
+else
+{
+    <div class="row justify-content-center g-4">
+        @foreach (var p in Model)
+        {
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    @if (!string.IsNullOrEmpty(p.ProductImageUrl))
+                    {
+                        <img src="@p.ProductImageUrl" class="card-img-top" alt="@p.ProductName" style="max-height: 220px; object-fit: contain;">
+                    }
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">@p.ProductName</h5>
+                        @if (!string.IsNullOrEmpty(p.Description))
+                        {
+                            <p class="card-text text-muted">@p.Description</p>
+                        }
+                        <div class="mb-2">
+                            @if (p.IsRecurring)
+                            {
+                                <span class="badge bg-primary">Abonelik · @p.RecurringText</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Tek seferlik</span>
+                            }
+                        </div>
+                        <h3 class="card-text text-primary mt-auto">@p.FormattedPrice @p.CurrencyCode</h3>
+                        <small class="text-muted mb-3">Ürün ID: <code>@p.Id</code></small>
+                        <form asp-action="Checkout" method="post">
+                            <input type="hidden" name="productId" value="@p.Id">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                @(p.IsRecurring ? "Abone Ol" : "Satın Al")
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <p class="text-center text-muted mt-4">
+        <small>Ödeme sayfasında sandbox test kartını kullanın (örn. Troy 9792 1000 0000 0001).</small>
+    </p>
+}
