@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tahsilat.NET.IntegrationTes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tahsilat.NET.Sample", "samples\Tahsilat.NET.Sample\Tahsilat.NET.Sample.csproj", "{208AEDE1-D647-22C5-EB13-4224D02F19E0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tahsilat.NET.Tests", "tests\Tahsilat.NET.Tests\Tahsilat.NET.Tests.csproj", "{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,18 @@ Global
 		{208AEDE1-D647-22C5-EB13-4224D02F19E0}.Release|x64.Build.0 = Release|Any CPU
 		{208AEDE1-D647-22C5-EB13-4224D02F19E0}.Release|x86.ActiveCfg = Release|Any CPU
 		{208AEDE1-D647-22C5-EB13-4224D02F19E0}.Release|x86.Build.0 = Release|Any CPU
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}.Debug|x64.Build.0 = Debug|Any CPU
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}.Debug|x86.Build.0 = Debug|Any CPU
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}.Release|x64.ActiveCfg = Release|Any CPU
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}.Release|x64.Build.0 = Release|Any CPU
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}.Release|x86.ActiveCfg = Release|Any CPU
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -69,6 +83,7 @@ Global
 		{648BA9AA-9A82-4B44-BD0C-5AAC931B303F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{D9BB0C17-8417-433D-9103-F6B119268C4E} = {C632322D-FA1B-4BB4-8A43-5338BCC308F5}
 		{208AEDE1-D647-22C5-EB13-4224D02F19E0} = {0FFD4553-00E8-475B-A4B7-9056FEBD6C6B}
+		{BAF65E0C-30FD-421B-98D6-7BAA7ABCF1EA} = {C632322D-FA1B-4BB4-8A43-5338BCC308F5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5D46DBF1-37B6-4BE0-8C59-136CF982EC65}
