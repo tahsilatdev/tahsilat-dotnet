@@ -20,24 +20,20 @@ namespace Tahsilat.NET.Infrastructure.Http
         internal static readonly TimeSpan RefreshMargin = TimeSpan.FromSeconds(60);
 
         private readonly string _secretKey;
-        private readonly HttpClient _httpClient;
+        private readonly HttpTransport _transport;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         // Token and expiry are swapped together so a reader outside the lock never
         // sees a new token paired with an old expiry.
         private volatile CachedToken? _current;
 
-        /// <summary>
-        /// Initializes with an externally shared HttpClient.
-        /// HttpClient lifecycle is managed externally.
-        /// </summary>
-        public TokenManager(string secretKey, HttpClient httpClient)
+        public TokenManager(string secretKey, HttpTransport transport)
         {
             if (string.IsNullOrWhiteSpace(secretKey))
                 throw new ArgumentNullException(nameof(secretKey));
 
             _secretKey = secretKey;
-            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _transport = transport ?? throw new ArgumentNullException(nameof(transport));
         }
 
         /// <summary>
@@ -97,37 +93,38 @@ namespace Tahsilat.NET.Infrastructure.Http
 
         /// <summary>
         /// Requests a token with the secret key and caches it. Must be called while
-        /// holding the semaphore.
+        /// holding the semaphore. Minting a token has no side effect, so a timed out
+        /// token request is safe to repeat.
         /// </summary>
         private async Task<string> FetchAsync(CancellationToken cancellationToken)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "token/get-token");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _secretKey);
-            request.Content = new StringContent("", System.Text.Encoding.UTF8, "application/json");
-
-            using (var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false))
+            using (var request = new HttpRequestMessage(HttpMethod.Post, "token/get-token"))
             {
-                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _secretKey);
+                request.Content = new StringContent("", System.Text.Encoding.UTF8, "application/json");
 
-                if (!response.IsSuccessStatusCode)
+                var raw = await _transport.SendAsync(request, safeToRepeat: true, cancellationToken).ConfigureAwait(false);
+
+                ApiResponse<TokenData>? result = null;
+                if (!string.IsNullOrWhiteSpace(raw.Body))
                 {
-                    ApiResponse<TokenData>? errorResponse = null;
-                    try { errorResponse = JsonConvert.DeserializeObject<ApiResponse<TokenData>>(content); } catch { }
-
-                    throw new TahsilatAuthenticationException(
-                        errorResponse?.Message ?? $"Token retrieval failed. Status: {response.StatusCode}",
-                        errorResponse?.ErrorCode,
-                        (int)response.StatusCode);
+                    try { result = JsonConvert.DeserializeObject<ApiResponse<TokenData>>(raw.Body!); } catch { }
                 }
 
-                var result = JsonConvert.DeserializeObject<ApiResponse<TokenData>>(content);
+                if (!raw.IsSuccess)
+                {
+                    throw new TahsilatAuthenticationException(
+                        result?.Message ?? $"Token retrieval failed. Status: {raw.StatusCode}",
+                        result?.ErrorCode,
+                        (int)raw.StatusCode);
+                }
 
                 if (result == null || !result.Status || result.Data == null || string.IsNullOrEmpty(result.Data.AccessToken))
                 {
                     throw new TahsilatAuthenticationException(
                         result?.Message ?? "Token response is invalid.",
                         result?.ErrorCode,
-                        0);
+                        (int)raw.StatusCode);
                 }
 
                 var fresh = new CachedToken(result.Data.AccessToken, result.Data.ExpiresAt);
@@ -138,7 +135,7 @@ namespace Tahsilat.NET.Infrastructure.Http
 
         public void Dispose()
         {
-            _semaphore?.Dispose();
+            _semaphore.Dispose();
         }
 
         private sealed class CachedToken

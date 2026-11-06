@@ -11,7 +11,10 @@ using Tahsilat.NET.Models.Common;
 
 namespace Tahsilat.NET.Infrastructure.Http
 {
-
+    /// <summary>
+    /// Attaches the access token, maps API errors to exceptions and retries once
+    /// with a fresh token when the server rejects the current one.
+    /// </summary>
     internal sealed class TahsilatHttpClient : ITahsilatHttpClient, IDisposable
     {
         /// <summary>
@@ -20,27 +23,15 @@ namespace Tahsilat.NET.Infrastructure.Http
         /// </summary>
         internal const string ErrorCodeInvalidToken = "1002";
 
-        private readonly HttpClient _client;
+        private readonly HttpTransport _transport;
         private readonly TokenManager _tokenManager;
 
         public TahsilatHttpClient(TahsilatClientOptions options)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
 
-            _client = new HttpClient
-            {
-                BaseAddress = new Uri(options.BaseUrl),
-                Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds)
-            };
-
-            if (_client.BaseAddress.Scheme != Uri.UriSchemeHttps)
-                throw new InvalidOperationException("Tahsilat API must be called over HTTPS.");
-
-            _client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "tahsilat-dotnet/1.0");
-            _client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("tr");
-            _client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
-
-            _tokenManager = new TokenManager(options.ApiKey, _client);
+            _transport = new HttpTransport(options);
+            _tokenManager = new TokenManager(options.ApiKey, _transport);
         }
 
         public async Task<TResponse> SendAndReadAsync<TResponse>(
@@ -50,55 +41,37 @@ namespace Tahsilat.NET.Infrastructure.Http
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            // A caller that set its own Authorization header manages its own token;
-            // only SDK-managed tokens are refreshed and retried below.
-            if (request.Headers.Contains(TahsilatConstants.HeaderAuthorization))
+            using (request)
             {
-                using (var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                // Only GETs are safe to deliver twice; a repeated POST could create a
+                // second payment or refund.
+                var safeToRepeat = request.Method == HttpMethod.Get;
+
+                // A caller that set its own Authorization header manages its own token;
+                // only SDK-managed tokens are refreshed and retried below.
+                if (request.Headers.Contains(TahsilatConstants.HeaderAuthorization))
                 {
-                    var body = await ReadBodyAsync(response).ConfigureAwait(false);
-                    if (!response.IsSuccessStatusCode)
-                        ThrowForError(response, body);
-                    return Deserialize<TResponse>(body);
-                }
-            }
-
-            var token = await _tokenManager.GetTokenAsync(cancellationToken).ConfigureAwait(false);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            // An HttpRequestMessage can be sent once, and HttpClient on .NET Framework
-            // disposes its content after sending, so the retry copy is built now.
-            var retry = await CloneAsync(request).ConfigureAwait(false);
-            try
-            {
-                using (var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
-                {
-                    var body = await ReadBodyAsync(response).ConfigureAwait(false);
-
-                    if (response.IsSuccessStatusCode)
-                        return Deserialize<TResponse>(body);
-
-                    if (!IsTokenRejected(response.StatusCode, body))
-                        ThrowForError(response, body);
+                    var own = await _transport.SendAsync(request, safeToRepeat, cancellationToken).ConfigureAwait(false);
+                    return Read<TResponse>(own);
                 }
 
-                // The server rejected the token (revoked, or expired in a way the local
-                // clock did not predict). Mint a fresh one and retry exactly once; a
-                // second failure surfaces as-is.
-                var freshToken = await _tokenManager.RefreshAsync(token, cancellationToken).ConfigureAwait(false);
-                retry.Headers.Authorization = new AuthenticationHeaderValue("Bearer", freshToken);
+                var token = await _tokenManager.GetTokenAsync(cancellationToken).ConfigureAwait(false);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await _client.SendAsync(retry, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                var raw = await _transport.SendAsync(request, safeToRepeat, cancellationToken).ConfigureAwait(false);
+
+                if (!raw.IsSuccess && IsTokenRejected(raw))
                 {
-                    var body = await ReadBodyAsync(response).ConfigureAwait(false);
-                    if (!response.IsSuccessStatusCode)
-                        ThrowForError(response, body);
-                    return Deserialize<TResponse>(body);
+                    // The server rejected the token (revoked, or expired in a way the
+                    // local clock did not predict). Mint a fresh one and retry exactly
+                    // once; a second failure surfaces as-is.
+                    var freshToken = await _tokenManager.RefreshAsync(token, cancellationToken).ConfigureAwait(false);
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", freshToken);
+
+                    raw = await _transport.SendAsync(request, safeToRepeat, cancellationToken).ConfigureAwait(false);
                 }
-            }
-            finally
-            {
-                retry.Dispose();
+
+                return Read<TResponse>(raw);
             }
         }
 
@@ -110,58 +83,40 @@ namespace Tahsilat.NET.Infrastructure.Http
             return Task.Run(() => SendAndReadAsync<TResponse>(request, CancellationToken.None)).GetAwaiter().GetResult();
         }
 
-        private static async Task<string?> ReadBodyAsync(HttpResponseMessage response)
+        /// <summary>
+        /// Throws for an HTTP error, then for a 2xx whose envelope says
+        /// <c>"status": false</c> (a bank rejection on refund or pre-auth, for
+        /// example), and otherwise deserialises the body.
+        /// </summary>
+        private static TResponse Read<TResponse>(RawResponse raw)
         {
-            return response.Content == null
-                ? null
-                : await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        }
+            var err = ParseError(raw.Body);
 
-        private static TResponse Deserialize<TResponse>(string? body)
-        {
-            if (string.IsNullOrWhiteSpace(body))
+            if (!raw.IsSuccess)
+                ThrowForError(raw, err);
+
+            if (err != null && err.Status == false)
+                throw new TahsilatApiException(FormatMessage(err, raw.StatusCode), (int)raw.StatusCode, err.ErrorCode);
+
+            if (string.IsNullOrWhiteSpace(raw.Body))
                 return default!;
 
-            return JsonConvert.DeserializeObject<TResponse>(body!)!;
+            return JsonConvert.DeserializeObject<TResponse>(raw.Body!)!;
         }
 
         /// <summary>
         /// The API answers an invalid or expired token with 403 + error_code 1002
         /// (not 401). 401 is handled too in case that ever changes.
         /// </summary>
-        private static bool IsTokenRejected(HttpStatusCode code, string? body)
+        private static bool IsTokenRejected(RawResponse raw)
         {
-            if (code == HttpStatusCode.Unauthorized)
+            if (raw.StatusCode == HttpStatusCode.Unauthorized)
                 return true;
 
-            if (code != HttpStatusCode.Forbidden)
+            if (raw.StatusCode != HttpStatusCode.Forbidden)
                 return false;
 
-            return string.Equals(ParseError(body)?.ErrorCode, ErrorCodeInvalidToken, StringComparison.Ordinal);
-        }
-
-        private static async Task<HttpRequestMessage> CloneAsync(HttpRequestMessage request)
-        {
-            var clone = new HttpRequestMessage(request.Method, request.RequestUri)
-            {
-                Version = request.Version
-            };
-
-            if (request.Content != null)
-            {
-                // Request bodies are small form/JSON payloads already held in memory,
-                // so buffering them is cheap.
-                var bytes = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                var content = new ByteArrayContent(bytes);
-                foreach (var header in request.Content.Headers)
-                    content.Headers.TryAddWithoutValidation(header.Key, header.Value);
-                clone.Content = content;
-            }
-
-            foreach (var header in request.Headers)
-                clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
-
-            return clone;
+            return string.Equals(ParseError(raw.Body)?.ErrorCode, ErrorCodeInvalidToken, StringComparison.Ordinal);
         }
 
         private static ApiErrorResponse? ParseError(string? body)
@@ -173,25 +128,28 @@ namespace Tahsilat.NET.Infrastructure.Http
             catch { return null; }
         }
 
-        private static void ThrowForError(HttpResponseMessage response, string? body)
+        private static string FormatMessage(ApiErrorResponse? err, HttpStatusCode code)
         {
-            var code = response.StatusCode;
-            var err = ParseError(body);
-
-            var errCode = err?.ErrorCode;
             var message = err?.Message ?? $"Tahsilat API error ({(int)code})";
 
             var errorList = err?.GetErrorList();
             if (errorList != null && errorList.Count > 0)
-            {
                 message = $"{message} [{string.Join("; ", errorList)}]";
-            }
+
+            return message;
+        }
+
+        private static void ThrowForError(RawResponse raw, ApiErrorResponse? err)
+        {
+            var code = raw.StatusCode;
+            var errCode = err?.ErrorCode;
+            var message = FormatMessage(err, code);
 
             switch (code)
             {
                 case HttpStatusCode.BadRequest:
                 case (HttpStatusCode)422:
-                    throw new TahsilatValidationException(message, errCode);
+                    throw new TahsilatValidationException(message, errCode, err?.GetErrorDictionary());
 
                 case HttpStatusCode.Unauthorized:
                 case HttpStatusCode.Forbidden:
@@ -203,8 +161,11 @@ namespace Tahsilat.NET.Infrastructure.Http
                 case HttpStatusCode.NotFound:
                     throw new TahsilatNotFoundException(message, errCode);
 
+                case HttpStatusCode.Conflict:
+                    throw new TahsilatConflictException(message, errCode);
+
                 case (HttpStatusCode)429:
-                    var retry = (int)(response.Headers.RetryAfter?.Delta?.TotalSeconds ?? 0);
+                    var retry = (int)(raw.RetryAfter?.TotalSeconds ?? 0);
                     throw new TahsilatRateLimitException(message, retry, errCode);
 
                 case (HttpStatusCode)424:
@@ -217,8 +178,8 @@ namespace Tahsilat.NET.Infrastructure.Http
 
         public void Dispose()
         {
-            _tokenManager?.Dispose();
-            _client?.Dispose();
+            _tokenManager.Dispose();
+            _transport.Dispose();
         }
     }
 }

@@ -72,6 +72,7 @@
 
 
 	<ItemGroup>
+		<InternalsVisibleTo Include="Tahsilat.NET.Tests" />
 		<InternalsVisibleTo Include="Tahsilat.NET.IntegrationTests" />
 		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 	</ItemGroup>
