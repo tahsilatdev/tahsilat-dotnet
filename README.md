@@ -848,6 +848,8 @@ WebhookHandler.ConstructEvent(payloadBytes, signature, secret, WebhookHandler.Di
 
 > **1.2.0 davranış değişikliği:** Önceki sürümlerde `tolerance` verilmediğinde zaman kontrolü hiç yapılmıyordu. Artık varsayılan 5 dakikadır. Sunucu saatinizin doğru (NTP ile eşitlenmiş) olduğundan emin olun.
 
+> **Dönem tahsilatlarını test etmek:** Sandbox'ta otomatik abonelik tahsilatı yapılmaz, bu yüzden `cycle_number >= 1` webhook'u canlı gelmez. Kendi imzaladığınız bir test webhook'u göndermek için örnek projedeki `samples/Tahsilat.NET.Sample/tools/Send-TestWebhook.ps1` betiğini kullanabilirsiniz (`-Cycle 1`, `-Fail`, `-AgeSeconds 600` ile replay reddi).
+
 > **Not:** `IsSuccess()`, `IsFailed()`, `IsPending()`, `IsRefunded()`, `HasSubscription()` gibi extension metotları ile ödeme, işlem ve abonelik durumunu kolayca kontrol edebilirsiniz.
 
 
