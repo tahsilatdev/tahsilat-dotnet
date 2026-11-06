@@ -77,6 +77,37 @@ namespace Tahsilat.NET.IntegrationTests
         }
 
         [Fact]
+        public async Task UpdateProductMetadata_ShouldReplaceAllEntries()
+        {
+            var created = await Client.Products.CreateAsync(new ProductCreateRequest
+            {
+                ProductName = "Metadata Test Product",
+                Price = 1500,
+                Metadata = new()
+                {
+                    new Dictionary<string, object> { ["category"] = "old" },
+                    new Dictionary<string, object> { ["source"] = "tahsilat-dotnet" }
+                }
+            });
+
+            // Liste mevcut metadata'nın tamamının yerine geçer: "source" gönderilmediği
+            // için silinmeli, "category" yeni değeri almalı.
+            var updated = await Client.Products.UpdateMetadataAsync(created.Id, new()
+            {
+                new Dictionary<string, object> { ["category"] = "new" }
+            });
+
+            Assert.NotNull(updated);
+            Assert.Equal(created.Id, updated.Id);
+            Assert.NotNull(updated.Metadata);
+            Assert.Single(updated.Metadata);
+            Assert.Equal("category", updated.Metadata[0].Key);
+            Assert.Equal("new", updated.Metadata[0].Value);
+
+            await Client.Products.DeleteAsync(created.Id);
+        }
+
+        [Fact]
         public async Task DeleteProduct_ShouldReturnTrue()
         {
             var created = await Client.Products.CreateAsync(new ProductCreateRequest

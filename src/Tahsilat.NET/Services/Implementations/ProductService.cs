@@ -49,6 +49,13 @@ namespace Tahsilat.NET.Services.Implementations
             return response?.Status ?? false;
         }
 
+        public async Task<ProductResponse> UpdateMetadataAsync(long productId, List<Dictionary<string, object>> metadata, CancellationToken ct = default)
+        {
+            var req = CreatePost($"products/update-metadata/{productId}", new ProductMetadataUpdateRequest(metadata));
+            var response = await _http.SendAndReadAsync<ApiResponse<ProductResponse>>(req, ct).ConfigureAwait(false);
+            return response?.Data;
+        }
+
         // Sync wrappers
 
         public ProductResponse Create(ProductCreateRequest request)
@@ -84,6 +91,13 @@ namespace Tahsilat.NET.Services.Implementations
             var req = CreateDelete($"products/{productId}");
             var response = _http.SendAndRead<ApiResponse<object>>(req);
             return response?.Status ?? false;
+        }
+
+        public ProductResponse UpdateMetadata(long productId, List<Dictionary<string, object>> metadata)
+        {
+            var req = CreatePost($"products/update-metadata/{productId}", new ProductMetadataUpdateRequest(metadata));
+            var response = _http.SendAndRead<ApiResponse<ProductResponse>>(req);
+            return response?.Data;
         }
     }
 }
