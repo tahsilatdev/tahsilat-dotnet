@@ -12,13 +12,16 @@ namespace Tahsilat.NET.Services.Interfaces
         Task<ProductResponse> CreateAsync(ProductCreateRequest request, CancellationToken ct = default);
         Task<ProductResponse> UpdateAsync(long productId, ProductUpdateRequest request, CancellationToken ct = default);
         Task<ProductResponse> GetAsync(long productId, CancellationToken ct = default);
-        Task<List<ProductResponse>> SearchAsync(string keyword, CancellationToken ct = default);
+        /// <summary>
+        /// Searches products. Pass null to list the first page without filters.
+        /// </summary>
+        Task<ProductSearchResponse> SearchAsync(ProductSearchRequest request = null, CancellationToken ct = default);
         Task<bool> DeleteAsync(long productId, CancellationToken ct = default);
 
         ProductResponse Create(ProductCreateRequest request);
         ProductResponse Update(long productId, ProductUpdateRequest request);
         ProductResponse Get(long productId);
-        List<ProductResponse> Search(string keyword);
+        ProductSearchResponse Search(ProductSearchRequest request = null);
         bool Delete(long productId);
     }
 }

@@ -52,6 +52,36 @@ namespace Tahsilat.NET.IntegrationTests
         }
 
         [Fact]
+        public async Task SearchCustomer_ByEmail_ShouldReturnThatCustomer()
+        {
+            var email = $"search{DateTime.UtcNow.Ticks}@mail.com";
+
+            var created = await Client.Customers.CreateAsync(new CustomerCreateRequest
+            {
+                Name = "Search",
+                LastName = "Test",
+                Email = email,
+                Phone = "+901234567890",
+                Country = "TR"
+            });
+
+            // Arama cevabı liste değil { meta, customers } nesnesi; parametreler
+            // sorgu dizesinde gider ve URL-encode edilir.
+            var page = await Client.Customers.SearchAsync(new CustomerSearchRequest
+            {
+                Email = email,
+                Limit = 10
+            });
+
+            Assert.NotNull(page);
+            Assert.NotNull(page.Meta);
+            Assert.NotNull(page.Customers);
+            Assert.Contains(page.Customers, c => c.Id == created.Id);
+
+            await Client.Customers.DeleteAsync(created.Id);
+        }
+
+        [Fact]
         public async Task DeleteCustomer_ShouldReturnTrue()
         {
             var created = await Client.Customers.CreateAsync(new CustomerCreateRequest

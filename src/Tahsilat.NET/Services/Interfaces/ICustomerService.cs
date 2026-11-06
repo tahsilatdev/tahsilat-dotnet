@@ -12,13 +12,16 @@ namespace Tahsilat.NET.Services.Interfaces
         Task<CustomerResponse> CreateAsync(CustomerCreateRequest request, CancellationToken ct = default);
         Task<CustomerResponse> UpdateAsync(long customerId, CustomerUpdateRequest request, CancellationToken ct = default);
         Task<CustomerResponse> GetAsync(long customerId, CancellationToken ct = default);
-        Task<List<CustomerResponse>> SearchAsync(string keyword, CancellationToken ct = default);
+        /// <summary>
+        /// Searches customers. Pass null to list the first page without filters.
+        /// </summary>
+        Task<CustomerSearchResponse> SearchAsync(CustomerSearchRequest request = null, CancellationToken ct = default);
         Task<bool> DeleteAsync(long customerId, CancellationToken ct = default);
 
         CustomerResponse Create(CustomerCreateRequest request);
         CustomerResponse Update(long customerId, CustomerUpdateRequest request);
         CustomerResponse Get(long customerId);
-        List<CustomerResponse> Search(string keyword);
+        CustomerSearchResponse Search(CustomerSearchRequest request = null);
         bool Delete(long customerId);
     }
 }

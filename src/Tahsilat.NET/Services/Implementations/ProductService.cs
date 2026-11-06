@@ -35,10 +35,10 @@ namespace Tahsilat.NET.Services.Implementations
             return response?.Data;
         }
 
-        public async Task<List<ProductResponse>> SearchAsync(string keyword, CancellationToken ct = default)
+        public async Task<ProductSearchResponse> SearchAsync(ProductSearchRequest request = null, CancellationToken ct = default)
         {
-            var req = CreateGet($"products/search?keyword={keyword}");
-            var response = await _http.SendAndReadAsync<ApiResponse<List<ProductResponse>>>(req, ct).ConfigureAwait(false);
+            var req = CreateGet("products/search", request);
+            var response = await _http.SendAndReadAsync<ApiResponse<ProductSearchResponse>>(req, ct).ConfigureAwait(false);
             return response?.Data;
         }
 
@@ -72,10 +72,10 @@ namespace Tahsilat.NET.Services.Implementations
             return response?.Data;
         }
 
-        public List<ProductResponse> Search(string keyword)
+        public ProductSearchResponse Search(ProductSearchRequest request = null)
         {
-            var req = CreateGet($"products/search?keyword={keyword}");
-            var response = _http.SendAndRead<ApiResponse<List<ProductResponse>>>(req);
+            var req = CreateGet("products/search", request);
+            var response = _http.SendAndRead<ApiResponse<ProductSearchResponse>>(req);
             return response?.Data;
         }
 

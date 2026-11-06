@@ -51,6 +51,32 @@ namespace Tahsilat.NET.IntegrationTests
         }
 
         [Fact]
+        public async Task SearchProduct_ById_ShouldReturnThatProduct()
+        {
+            var created = await Client.Products.CreateAsync(new ProductCreateRequest
+            {
+                ProductName = "Search Test Product",
+                Price = 2500,
+                Description = "Integration Test Product (search)"
+            });
+
+            // Arama cevabı liste değil { meta, products } nesnesi; parametreler
+            // sorgu dizesinde gider.
+            var page = await Client.Products.SearchAsync(new ProductSearchRequest
+            {
+                ProductId = created.Id,
+                Limit = 10
+            });
+
+            Assert.NotNull(page);
+            Assert.NotNull(page.Meta);
+            Assert.NotNull(page.Products);
+            Assert.Contains(page.Products, p => p.Id == created.Id);
+
+            await Client.Products.DeleteAsync(created.Id);
+        }
+
+        [Fact]
         public async Task DeleteProduct_ShouldReturnTrue()
         {
             var created = await Client.Products.CreateAsync(new ProductCreateRequest
