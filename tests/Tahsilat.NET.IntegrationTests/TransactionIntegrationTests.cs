@@ -1,3 +1,4 @@
+using Tahsilat.NET.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,6 +36,21 @@ namespace Tahsilat.NET.IntegrationTests
             // helper: charged_amount varsa onu, yoksa amount'u döner
             var decimal_ = result.GetChargedAmountDecimal();
             Assert.True(decimal_ > 0);
+
+            // Abonelik ödemesiyse subscription bloğu dolu gelir (sandbox'ta doğrulandı:
+            // ilk 3D ödemede cycle_number=0, is_initial_payment=true, status=active).
+            if (result.HasSubscription())
+            {
+                Assert.True(result.GetSubscriptionId() > 0);
+                Assert.True(result.GetSubscriptionCycleNumber() >= 0);
+                Assert.False(string.IsNullOrEmpty(result.Subscription.StatusText));
+                Assert.False(string.IsNullOrEmpty(result.Subscription.NextBillingAt));
+                Assert.NotEqual("Bilinmiyor", result.GetSubscriptionStatusTextTr());
+            }
+            else
+            {
+                Assert.Null(result.GetSubscriptionId());
+            }
         }
 
         [Fact]
