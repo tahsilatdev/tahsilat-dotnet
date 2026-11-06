@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using Tahsilat.NET.Configuration;
 using Tahsilat.NET.Exceptions;
 using Tahsilat.NET.Models.Common;
 using Tahsilat.NET.Models.Responses;
@@ -41,6 +40,10 @@ namespace Tahsilat.NET.Infrastructure.Http
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
+        /// <summary>
+        /// Returns the cached token, fetching a new one when none is cached or the
+        /// cached one is within <see cref="RefreshMargin"/> of expiry.
+        /// </summary>
         public async Task<string> GetTokenAsync(CancellationToken cancellationToken = default)
         {
             var cached = _current;
@@ -54,39 +57,29 @@ namespace Tahsilat.NET.Infrastructure.Http
                 if (cached != null && cached.IsUsable)
                     return cached.Value;
 
-                var request = new HttpRequestMessage(HttpMethod.Post, "token/get-token");
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _secretKey);
-                request.Content = new StringContent("", System.Text.Encoding.UTF8, "application/json");
+                return await FetchAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
 
-                using (var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false))
-                {
-                    var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        /// <summary>
+        /// Called after the server rejected <paramref name="rejectedToken"/>. Fetches
+        /// a replacement unless another request already replaced it, so a burst of
+        /// concurrent 403s costs one token request rather than one per caller.
+        /// </summary>
+        public async Task<string> RefreshAsync(string rejectedToken, CancellationToken cancellationToken = default)
+        {
+            await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                var cached = _current;
+                if (cached != null && cached.IsUsable && !string.Equals(cached.Value, rejectedToken, StringComparison.Ordinal))
+                    return cached.Value;
 
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        ApiResponse<TokenData>? errorResponse = null;
-                        try { errorResponse = JsonConvert.DeserializeObject<ApiResponse<TokenData>>(content); } catch { }
-
-                        throw new TahsilatAuthenticationException(
-                            errorResponse?.Message ?? $"Token retrieval failed. Status: {response.StatusCode}",
-                            errorResponse?.ErrorCode,
-                            (int)response.StatusCode);
-                    }
-
-                    var result = JsonConvert.DeserializeObject<ApiResponse<TokenData>>(content);
-
-                    if (result == null || !result.Status || result.Data == null || string.IsNullOrEmpty(result.Data.AccessToken))
-                    {
-                        throw new TahsilatAuthenticationException(
-                            result?.Message ?? "Token response is invalid.",
-                            result?.ErrorCode,
-                            0);
-                    }
-
-                    var fresh = new CachedToken(result.Data.AccessToken, result.Data.ExpiresAt);
-                    _current = fresh;
-                    return fresh.Value;
-                }
+                return await FetchAsync(cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -100,6 +93,47 @@ namespace Tahsilat.NET.Infrastructure.Http
         public string GetToken()
         {
             return Task.Run(() => GetTokenAsync(CancellationToken.None)).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Requests a token with the secret key and caches it. Must be called while
+        /// holding the semaphore.
+        /// </summary>
+        private async Task<string> FetchAsync(CancellationToken cancellationToken)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "token/get-token");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _secretKey);
+            request.Content = new StringContent("", System.Text.Encoding.UTF8, "application/json");
+
+            using (var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false))
+            {
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    ApiResponse<TokenData>? errorResponse = null;
+                    try { errorResponse = JsonConvert.DeserializeObject<ApiResponse<TokenData>>(content); } catch { }
+
+                    throw new TahsilatAuthenticationException(
+                        errorResponse?.Message ?? $"Token retrieval failed. Status: {response.StatusCode}",
+                        errorResponse?.ErrorCode,
+                        (int)response.StatusCode);
+                }
+
+                var result = JsonConvert.DeserializeObject<ApiResponse<TokenData>>(content);
+
+                if (result == null || !result.Status || result.Data == null || string.IsNullOrEmpty(result.Data.AccessToken))
+                {
+                    throw new TahsilatAuthenticationException(
+                        result?.Message ?? "Token response is invalid.",
+                        result?.ErrorCode,
+                        0);
+                }
+
+                var fresh = new CachedToken(result.Data.AccessToken, result.Data.ExpiresAt);
+                _current = fresh;
+                return fresh.Value;
+            }
         }
 
         public void Dispose()
