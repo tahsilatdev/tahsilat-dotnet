@@ -26,7 +26,7 @@
 
 				SUBSCRIPTIONS (recurring payments)
 				- ProductCreateRequest/ProductUpdateRequest: IsRecurring, BillingInterval (enum), IntervalCount
-				- ProductResponse: IsRecurring, BillingInterval, IntervalCount, RecurringText, PaymentLink. CustomerResponse: PaymentLink
+				- ProductResponse: IsRecurring, BillingInterval, IntervalCount, RecurringText, PaymentLink (object: HasPaymentLink), EditLock (Locked + Reason when an active subscription locks the product), Subscription (HasSubscription). CustomerResponse: PaymentLink, Notes, Subscription
 				- PaymentCreateRequest: SubscriptionCredentialId, WhiteLabel, InstallmentCount
 				- TransactionResult and WebhookEvent: Subscription block (SubscriptionInfo) + HasSubscription/GetSubscriptionId/GetSubscriptionCycleNumber/IsInitialSubscriptionPayment/GetSubscriptionStatusTextTr. WebhookEvent: FormattedAmount
 				- SubscriptionStatus and BillingInterval enums

@@ -78,9 +78,24 @@ namespace Tahsilat.NET.Models.Responses
 
         /// <summary>
         /// Payment link block: <c>HasPaymentLink</c> tells whether a link is bound
-        /// to the customer; the link's fields are in <c>Extra</c>.
+        /// to the customer; the link's fields are in <c>Extra</c>. Present on search
+        /// rows and GET; absent on the create/update response.
         /// </summary>
         [JsonProperty("payment_link")]
         public PaymentLinkInfo PaymentLink { get; set; }
+
+        /// <summary>
+        /// Free-text note kept on the customer in the panel. Only on GET
+        /// customers/{id}; null elsewhere.
+        /// </summary>
+        [JsonProperty("notes")]
+        public string Notes { get; set; }
+
+        /// <summary>
+        /// Whether a subscription is linked to this customer. Only on GET
+        /// customers/{id}; null elsewhere.
+        /// </summary>
+        [JsonProperty("subscription")]
+        public SubscriptionLinkInfo Subscription { get; set; }
     }
 }

@@ -90,9 +90,25 @@ namespace Tahsilat.NET.Models.Responses
 
         /// <summary>
         /// Payment link block: <c>HasPaymentLink</c> tells whether a link is bound
-        /// to the product; the link's fields are in <c>Extra</c>.
+        /// to the product; the link's fields are in <c>Extra</c>. Present on search
+        /// rows and GET; absent on the create/update response.
         /// </summary>
         [JsonProperty("payment_link")]
         public PaymentLinkInfo PaymentLink { get; set; }
+
+        /// <summary>
+        /// Whether the product is locked by an active or pending subscription
+        /// (name, price and billing fields unchangeable, delete refused with 409).
+        /// Only on GET products/{id}; null elsewhere.
+        /// </summary>
+        [JsonProperty("edit_lock")]
+        public EditLockInfo EditLock { get; set; }
+
+        /// <summary>
+        /// Whether a subscription is linked to this product. Only on GET
+        /// products/{id}; null elsewhere.
+        /// </summary>
+        [JsonProperty("subscription")]
+        public SubscriptionLinkInfo Subscription { get; set; }
     }
 }

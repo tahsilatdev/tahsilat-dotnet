@@ -106,6 +106,41 @@ namespace Tahsilat.NET.Tests
         }
 
         [Fact]
+        public void ProductGet_ReadsEditLockAndSubscriptionLink()
+        {
+            // Real sandbox shape of GET products/{id} for a product used by an active subscription.
+            var product = JsonConvert.DeserializeObject<ProductResponse>(
+                "{\"id\":50853257515222,\"product_name\":\"SAMSUNG\",\"price\":7895000,\"is_recurring\":true," +
+                "\"edit_lock\":{\"locked\":true,\"reason\":\"Bu ürün aktif bir abonelikte kullanıldığından adı ve tutarı değiştirilemez.\"}," +
+                "\"subscription\":{\"has_subscription\":true}}")!;
+
+            Assert.True(product.EditLock.Locked);
+            Assert.Contains("aktif bir abonelikte", product.EditLock.Reason);
+            Assert.True(product.Subscription.HasSubscription);
+
+            var free = JsonConvert.DeserializeObject<ProductResponse>(
+                "{\"id\":1,\"edit_lock\":{\"locked\":false,\"reason\":null},\"subscription\":{\"has_subscription\":false}}")!;
+            Assert.False(free.EditLock.Locked);
+            Assert.Null(free.EditLock.Reason);
+            Assert.False(free.Subscription.HasSubscription);
+
+            // Search rows and create responses carry neither block.
+            var row = JsonConvert.DeserializeObject<ProductResponse>("{\"id\":1,\"product_name\":\"x\"}")!;
+            Assert.Null(row.EditLock);
+            Assert.Null(row.Subscription);
+        }
+
+        [Fact]
+        public void CustomerGet_ReadsNotesAndSubscriptionLink()
+        {
+            var customer = JsonConvert.DeserializeObject<CustomerResponse>(
+                "{\"id\":80797856192885,\"name\":\"Berk\",\"notes\":\"VIP\",\"subscription\":{\"has_subscription\":false}}")!;
+
+            Assert.Equal("VIP", customer.Notes);
+            Assert.False(customer.Subscription.HasSubscription);
+        }
+
+        [Fact]
         public void PaymentLink_WithoutLink_IsJustTheFlag()
         {
             // Real sandbox shape: {"payment_link":{"has_payment_link":false}}
