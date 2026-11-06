@@ -28,15 +28,19 @@
                                 İşlemler
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" asp-controller="Home" asp-action="BinLookup">Bin Sorgulama</a></li>
-                                <li><a class="dropdown-item" asp-controller="Home" asp-action="Installments">Taksit/Komisyon Sorgulama</a></li>
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="StartPayment">Ödeme Başlat (abonelik dahil)</a></li>
                                 <li><a class="dropdown-item" asp-controller="Home" asp-action="TransactionResult">İşlem Sonucu Sorgulama</a></li>
-                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" asp-controller="Home" asp-action="Refund">İade Talebi Oluşturma</a></li>
                                 <li><a class="dropdown-item" asp-controller="Home" asp-action="PreAuthResolve">Ön Provizyon Kapatma</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" asp-controller="Home" asp-action="CreateCustomer">Müşteri Oluşturma</a></li>
-                                <li><a class="dropdown-item" asp-controller="Home" asp-action="CreateProduct">Ürün Oluşturma</a></li>
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="SearchCustomers">Müşteri Arama / Silme</a></li>
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="CreateProduct">Ürün Oluşturma (abonelik dahil)</a></li>
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="SearchProducts">Ürün Arama / Silme</a></li>
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="UpdateProductMetadata">Ürün Metadata Güncelleme</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="BinLookup">Bin Sorgulama</a></li>
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="Installments">Taksit/Komisyon Sorgulama</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" asp-controller="Webhook" asp-action="Index">Webhook Kayıtları</a></li>
                             </ul>

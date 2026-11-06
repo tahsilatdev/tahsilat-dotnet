@@ -1,4 +1,4 @@
-@model List<(DateTime ReceivedAt, Tahsilat.NET.Webhooks.WebhookEvent Event)>
+@model List<Tahsilat.NET.Sample.Controllers.WebhookController.ReceivedWebhook>
 
 @{
     ViewData["Title"] = "Webhook Logs";
@@ -6,32 +6,39 @@
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2> Webhook Logs</h2>
+        <h2>Webhook Logs</h2>
         <span class="badge bg-secondary fs-6">@Model.Count kayıt</span>
     </div>
 
+    @if (ViewBag.SecretConfigured != true)
+    {
+        <div class="alert alert-warning">
+            <strong>Webhook secret ayarlı değil.</strong> <code>appsettings.local.json</code> içine
+            <code>Tahsilat:WebhookSecret</code> değerini yazın; aksi halde her webhook imza hatasıyla reddedilir.
+        </div>
+    }
+
     <div class="card mb-4">
         <div class="card-header bg-info text-white">
-            <strong> Webhook Test Kurulumu</strong>
+            <strong>Webhook Test Kurulumu (ngrok)</strong>
         </div>
         <div class="card-body">
-            <p>Webhook'ları lokal ortamda test etmek için bir tunnel aracı kullanmanız gerekir. Aşağıdaki adımları takip edin:</p>
-            <ol>
+            <ol class="mb-2">
                 <li>
-                    <strong>ngrok</strong> veya benzeri bir tunnel aracı kurun:
-                    <pre class="bg-light p-2 mt-1"><code>ngrok http 5000</code> veya <code>http https://localhost:5000/</code></pre>
+                    Uygulamayı çalıştırın, sonra tunnel açın:
+                    <pre class="bg-light p-2 mt-1 mb-1"><code>ngrok http https://localhost:7195</code></pre>
                 </li>
                 <li>
-                    Oluşan public URL'i kopyalayın (örn: <code>https://abcdef.ngrok-free.app/webhook/receive</code>)
+                    Tahsilat panelinde webhook adresi olarak ngrok'un verdiği URL + <code>/webhook/receive</code> yazın:
+                    <pre class="bg-light p-2 mt-1 mb-1"><code>https://abcdef.ngrok-free.app/webhook/receive</code></pre>
                 </li>
-                <li>
-                    Tahsilat Dashboard'dan webhook URL'inizi ayarlayın:
-                    <pre class="bg-light p-2 mt-1"><code>https://abcdef.ngrok-free.app/webhook/receive</code></pre>
-                </li>
-                <li>
-                    Bir ödeme işlemi gerçekleştirin — webhook bu sayfada görünecektir.
-                </li>
+                <li>Paneldeki webhook secret'ı <code>appsettings.local.json</code> → <code>Tahsilat:WebhookSecret</code> alanına yazın.</li>
+                <li><a asp-controller="Home" asp-action="StartPayment">Ödeme başlatın</a>; sonuç bu sayfaya düşer. Sayfayı yenileyin.</li>
             </ol>
+            <small class="text-muted">
+                Replay koruması açıktır: ngrok'un "Replay" düğmesiyle 5 dakikadan eski bir isteği tekrar gönderirseniz
+                <code>400 Invalid webhook signature</code> almanız beklenir.
+            </small>
         </div>
     </div>
 
@@ -44,21 +51,22 @@
     else
     {
         <div class="table-responsive">
-            <table class="table table-striped table-hover">
+            <table class="table table-striped table-hover align-middle">
                 <thead class="table-dark">
                     <tr>
                         <th>Tarih</th>
                         <th>Transaction ID</th>
                         <th>Tutar</th>
-                        <th>Para Birimi</th>
                         <th>Ödeme Durumu</th>
                         <th>İşlem Durumu</th>
                         <th>Abonelik</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var (receivedAt, evt) in Model)
+                    @foreach (var item in Model)
                     {
+                        var evt = item.Event;
                         var badgeClass = evt.PaymentStatus switch
                         {
                             1 => "bg-success",
@@ -68,10 +76,9 @@
                         };
 
                         <tr>
-                            <td>@receivedAt.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                            <td>@item.ReceivedAt.ToString("dd.MM.yyyy HH:mm:ss")</td>
                             <td><code>@evt.TransactionId</code></td>
-                            <td>@((evt.Amount / 100m).ToString("N2"))</td>
-                            <td>@evt.CurrencyCode</td>
+                            <td>@evt.FormattedAmount @evt.CurrencyCode</td>
                             <td>
                                 <span class="badge @badgeClass">
                                     @(evt.PaymentStatus switch
@@ -98,6 +105,12 @@
                                 {
                                     <span class="text-muted">—</span>
                                 }
+                            </td>
+                            <td>
+                                <details>
+                                    <summary class="small">JSON</summary>
+                                    <pre class="small mb-0" style="max-width: 420px; white-space: pre-wrap;">@item.RawPayload</pre>
+                                </details>
                             </td>
                         </tr>
                     }

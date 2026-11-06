@@ -1,0 +1,58 @@
+@using System.Text.Json
+@using Tahsilat.NET.Models.Responses
+@model Tahsilat.NET.Sample.Models.MetadataFormModel
+@{
+    ViewData["Title"] = "Ürün Metadata Güncelleme";
+    var result = ViewBag.Result as ProductResponse;
+}
+
+<div class="text-center">
+    <h1 class="display-4">Ürün Metadata Güncelleme</h1>
+    <p>
+        <code>POST products/update-metadata/{id}</code>. Gönderilen liste ürünün mevcut metadata'sının
+        <strong>tamamının yerine geçer</strong>; korumak istediklerinizi yeniden gönderin.
+    </p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        @if (ViewBag.Error != null) { <div class="alert alert-danger">@ViewBag.Error</div> }
+
+        @if (result != null)
+        {
+            <div class="alert alert-success">
+                <strong>Güncellendi.</strong> Ürün @result.Id — @result.ProductName
+                <ul class="mb-0 mt-2">
+                    @foreach (var m in result.Metadata ?? new())
+                    {
+                        <li><code>@m.Key</code> = @m.Value</li>
+                    }
+                    @if (result.Metadata == null || result.Metadata.Count == 0)
+                    {
+                        <li class="text-muted">Metadata boş</li>
+                    }
+                </ul>
+            </div>
+            <details class="mb-3">
+                <summary>Raw JSON Response</summary>
+                <pre>@JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </details>
+        }
+
+        <form asp-action="UpdateProductMetadata" method="post">
+            <div class="mb-3">
+                <label asp-for="ProductId" class="form-label">Ürün ID</label>
+                <input asp-for="ProductId" type="number" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label asp-for="Metadata" class="form-label">Metadata <span class="text-muted">(satır başına key=value)</span></label>
+                <textarea asp-for="Metadata" class="form-control" rows="5" placeholder="category=phone&#10;source=tahsilat-dotnet"></textarea>
+                <small class="text-muted">
+                    key: küçük harfle başlar, yalnız a-z 0-9 _ (en fazla 20); value: en fazla 200 karakter; en fazla 25 kayıt.
+                    Boş bırakırsanız boş liste gönderilir (API davranışı: tümü silinir).
+                </small>
+            </div>
+            <button type="submit" class="btn btn-success w-100">Metadata'yı Değiştir</button>
+        </form>
+    </div>
+</div>

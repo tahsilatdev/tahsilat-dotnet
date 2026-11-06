@@ -1,22 +1,24 @@
-using Tahsilat.NET;
-using Tahsilat.NET.Abstractions;
 using Tahsilat.NET.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Secret key ve webhook secret'ı appsettings.local.json'a yazın; dosya git'e girmez.
+builder.Configuration.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true);
+
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
 
-//builder.Services.AddTahsilat(options =>
-//{
-//    options.ApiKey = "sk_test_YOUR_SECRET_KEY";
-//    options.TimeoutSeconds = 30;
-//});
+// ITahsilatClient singleton olarak kaydedilir; controller'lar constructor'dan alır.
+builder.Services.AddTahsilat(options =>
+{
+    options.ApiKey = builder.Configuration["Tahsilat:ApiKey"]
+        ?? throw new InvalidOperationException("Tahsilat:ApiKey ayarı eksik. appsettings.local.json dosyasına sk_test_... anahtarınızı yazın.");
+    options.TimeoutSeconds = 80;     // varsayılan
+    options.MaxNetworkRetries = 3;   // varsayılan
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

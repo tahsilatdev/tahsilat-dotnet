@@ -21,13 +21,17 @@
         {
             <div class="alert alert-danger">
                 @ViewBag.Error
+                @if (ViewBag.Rejected == true)
+                {
+                    <div class="mt-1"><small>API <code>"status": false</code> döndü; SDK bunu <code>TahsilatApiException</code> olarak fırlatır.</small></div>
+                }
             </div>
         }
 
         @if (result != null)
         {
-            <div class="alert @(result.Status ? "alert-success" : "alert-danger")">
-                <strong>@(result.Status ? "İşlem başarılı" : "İşlem başarısız")</strong>
+            <div class="alert alert-success">
+                <strong>İşlem başarılı</strong>
                 @if (!string.IsNullOrEmpty(result.Message))
                 {
                     <div class="mt-1">@result.Message</div>

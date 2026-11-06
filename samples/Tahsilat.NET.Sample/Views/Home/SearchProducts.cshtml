@@ -1,0 +1,120 @@
+@using System.Text.Json
+@using Tahsilat.NET.Models.Requests
+@using Tahsilat.NET.Models.Responses
+@model ProductSearchRequest
+@{
+    ViewData["Title"] = "Ürün Arama";
+    var result = ViewBag.Result as ProductSearchResponse;
+}
+
+<div class="text-center">
+    <h1 class="display-4">Ürün Arama</h1>
+    <p>Filtreler AND ile birleşir; hiç filtre vermezseniz ilk sayfa gelir.</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        @if (TempData["Message"] != null) { <div class="alert alert-success">@TempData["Message"]</div> }
+        @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+        @if (ViewBag.Error != null) { <div class="alert alert-danger">@ViewBag.Error</div> }
+
+        <form asp-action="SearchProducts" method="post" class="card card-body mb-4">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label asp-for="ProductName" class="form-label">Ürün adı</label>
+                    <input asp-for="ProductName" class="form-control">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label asp-for="ProductId" class="form-label">Ürün ID</label>
+                    <input asp-for="ProductId" type="number" class="form-control">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Fiyat (kuruş)</label>
+                    <input name="Financial.Price" type="number" class="form-control" value="@Model.Financial?.Price">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Operatör</label>
+                    <select name="Financial.Operator" class="form-select">
+                        @foreach (var op in new[] { "=", ">", ">=", "<", "<=" })
+                        {
+                            <option value="@op" selected="@(Model.Financial?.Operator == op)">@op</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Başlangıç</label>
+                    <input name="ProductDate.StartDate" type="date" class="form-control" value="@Model.ProductDate?.StartDate?.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Bitiş</label>
+                    <input name="ProductDate.EndDate" type="date" class="form-control" value="@Model.ProductDate?.EndDate?.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Metadata key</label>
+                    <input name="Metadata.Key" class="form-control" value="@Model.Metadata?.Key">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Metadata value</label>
+                    <input name="Metadata.Value" class="form-control" value="@Model.Metadata?.Value">
+                </div>
+                <div class="col-md-1 mb-3">
+                    <label asp-for="Page" class="form-label">Sayfa</label>
+                    <input asp-for="Page" type="number" class="form-control" min="1">
+                </div>
+                <div class="col-md-1 mb-3">
+                    <label asp-for="Limit" class="form-label">Limit</label>
+                    <input asp-for="Limit" type="number" class="form-control" min="1" max="100">
+                </div>
+                <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Ara</button>
+                </div>
+            </div>
+        </form>
+
+        @if (result != null)
+        {
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>
+                    Toplam: <strong>@(result.Meta?.Total?.ToString() ?? "?")</strong>
+                    @if (result.Meta?.Page != null) { <text>· Sayfa @result.Meta.Page</text> }
+                    @if (result.Meta?.Limit != null) { <text>· Limit @result.Meta.Limit</text> }
+                </span>
+                <span class="badge bg-secondary">@(result.Products?.Count ?? 0) satır</span>
+            </div>
+
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr><th>ID</th><th>Ürün</th><th>Fiyat</th><th>Abonelik</th><th>Metadata</th><th>Oluşturulma</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in result.Products ?? new())
+                    {
+                        <tr>
+                            <td><code>@p.Id</code></td>
+                            <td>@p.ProductName</td>
+                            <td>@p.FormattedPrice @p.CurrencyCode</td>
+                            <td>
+                                @if (p.IsRecurring) { <span class="badge bg-primary">@p.RecurringText</span> }
+                                else { <span class="text-muted">—</span> }
+                            </td>
+                            <td class="small">@string.Join(", ", (p.Metadata ?? new()).Select(m => $"{m.Key}={m.Value}"))</td>
+                            <td>@p.FormattedCreatedAt</td>
+                            <td class="text-nowrap">
+                                <a class="btn btn-sm btn-outline-secondary" asp-action="UpdateProductMetadata" asp-route-productId="@p.Id">Metadata</a>
+                                <form asp-action="DeleteProduct" method="post" class="d-inline" onsubmit="return confirm('Ürün @p.Id silinsin mi?');">
+                                    <input type="hidden" name="productId" value="@p.Id">
+                                    <button class="btn btn-sm btn-outline-danger">Sil</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <details>
+                <summary>Raw JSON Response (meta dahil)</summary>
+                <pre>@JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </details>
+        }
+    </div>
+</div>

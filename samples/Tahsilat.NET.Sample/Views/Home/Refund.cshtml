@@ -15,36 +15,35 @@
         {
             <div class="alert alert-danger">
                 @ViewBag.Error
+                @if (ViewBag.Rejected == true)
+                {
+                    <div class="mt-1">
+                        <small>
+                            Banka reddetti: API <code>200</code> içinde <code>"status": false</code> döndü, SDK bunu
+                            <code>TahsilatApiException</code> olarak fırlattı. İade beklemede kalır ve tekrar denenebilir.
+                        </small>
+                    </div>
+                }
             </div>
         }
 
         @if (ViewBag.Result != null)
         {
             var res = ViewBag.Result;
-            bool ok = res.Status == true;
 
-            <div class="alert @(ok ? "alert-success" : "alert-danger")">
-                <strong>@(ok ? "İade talebi kabul edildi" : "İade talebi reddedildi")</strong>
+            <div class="alert alert-success">
+                <strong>İade talebi kabul edildi</strong>
                 @if (!string.IsNullOrEmpty((string)res.Message))
                 {
                     <div class="mt-1">@res.Message</div>
                 }
-                @if (!ok)
-                {
-                    <div class="mt-1">
-                        <small>Banka reddettiğinde iade beklemede kalır ve tekrar denenebilir.</small>
-                    </div>
-                }
             </div>
-            @if (ok)
-            {
-                <div class="alert alert-info">
-                    İade endpoint'i yanıtta <code>Data</code> alanını doldurmaz. İade kaydının
-                    güncel durumunu görmek için
-                    <a asp-action="TransactionResult">İşlem Sonucu Sorgulama</a>
-                    sayfasından aynı işlem numarasını sorgulayın.
-                </div>
-            }
+            <div class="alert alert-info">
+                İade endpoint'i yanıtta <code>Data</code> alanını doldurmaz. İade kaydının
+                güncel durumunu görmek için
+                <a asp-action="TransactionResult">İşlem Sonucu Sorgulama</a>
+                sayfasından aynı işlem numarasını sorgulayın.
+            </div>
             <details>
                 <summary>Raw JSON Response</summary>
                 <pre>@JsonSerializer.Serialize(ViewBag.Result, new JsonSerializerOptions { WriteIndented = true })</pre>

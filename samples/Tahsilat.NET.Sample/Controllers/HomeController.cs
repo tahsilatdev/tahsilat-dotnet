@@ -1,10 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
-using System.Numerics;
-using System.Text.Json;
+using System.Text;
 using Tahsilat.NET.Abstractions;
+using Tahsilat.NET.Exceptions;
 using Tahsilat.NET.Extensions;
-using Tahsilat.NET.Models.Common;
 using Tahsilat.NET.Models.Requests;
 using Tahsilat.NET.Sample.Models;
 
@@ -13,277 +12,99 @@ namespace Tahsilat.NET.Sample.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    //private readonly ITahsilatClient _tahsilat;
+    private readonly ITahsilatClient _tahsilat;
 
-    public HomeController(ILogger<HomeController> logger/*, ITahsilatClient tahsilat*/)
+    public HomeController(ILogger<HomeController> logger, ITahsilatClient tahsilat)
     {
         _logger = logger;
-        //_tahsilat = tahsilat;
+        _tahsilat = tahsilat;
     }
+
+    // ---------------------------------------------------------------- Mağaza demo
 
     public IActionResult Index()
     {
-        // Display a static product for demo
         ViewBag.Product = "iPhone 15 Pro Max";
         ViewBag.Price = 85000;
         return View();
     }
 
+    /// <summary>
+    /// Demo akışı: müşteri + ürün oluştur, kayıtlı ürün ID'si ile ödeme başlat,
+    /// müşteriyi ödeme sayfasına yönlendir.
+    /// </summary>
     [HttpPost]
     public async Task<IActionResult> Checkout()
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-
-            //1. Doğrudan Ödeme
-            //var request = new PaymentCreateRequest
-            //{
-            //    Currency = "TRY",
-            //    Amount = 500000,
-            //    Metadata = new()
-            //    {
-            //        new Dictionary<string, object>
-            //        {
-            //            ["customer_type"] = "premium",
-            //            ["special_id"] = 123456
-            //        }
-            //    }
-            //};
-
-            //var response = await tahsilat.Payments.CreateAsync(request);
-
-            //Ürün Oluşturma
-            //var productRequest = new ProductCreateRequest
-            //{
-            //    ProductName = "iPhone 15 Pro Max",
-            //    Price = 50000,
-            //    Description = "256GB Titanium"
-            //};
-
-            //var productResponse = await tahsilat.Products.CreateAsync(productRequest);
-
-            ////3. Ürün ID’leri ile Ödeme
-
-            //var paymentRequest = new PaymentCreateRequest
-            //{
-            //    Currency = "TRY",
-            //    Amount = 50000,
-            //    ProductIds = new List<long>
-            //    {
-            //        84920468860151,
-            //        55437751141488
-            //    },
-            //    CustomerId = 20585467989184,
-            //    Metadata = new()
-            //    {
-            //        new Dictionary<string, object>
-            //        {
-            //            ["order_id"] = 123456,
-            //            ["customer_type"] = "premium"
-            //        },
-            //        new Dictionary<string, object>
-            //        {
-            //            ["created"] = "Subat2026",
-            //            ["source"] = "Tahsilat-dotnet-test"
-            //        }
-            //    },
-            //    RedirectUrl = $"{Request.Scheme}://{Request.Host}/Home/PaymentResult"
-            //};
-
-            //var response = await tahsilat.Payments.CreateAsync(paymentRequest);
-
-            //if (!string.IsNullOrEmpty(response.PaymentPageUrl))
-            //{
-            //    // Redirect user to the hosted payment page
-            //    return Redirect(response.PaymentPageUrl);
-            //}
-
-            ////2. Doğrudan Ürün Bilgileri ile Ödeme
-            //var request = new PaymentCreateRequest
-            //{
-            //    Currency = "TRY",
-            //    Amount = 70000,
-            //    RedirectUrl = "https://example.com/payment/callback",
-            //    Products = new List<ProductItem>
-            //    {
-            //        new ProductItem
-            //        {
-            //            ProductName = "Product1",
-            //            Price = 50000,
-            //            Description = "Test Product"
-            //        },
-            //        new ProductItem
-            //        {
-            //            ProductName = "Product2",
-            //            Price = 10000,
-            //            Description = "Test Product"
-            //        },
-            //        new ProductItem
-            //        {
-            //            ProductName = "Product3",
-            //            Price = 10000,
-            //            Description = "Test Product"
-            //        }
-            //    },
-            //    Metadata = new()
-            //    {
-            //        new Dictionary<string, object>
-            //        {
-            //            ["order_id"] = 123456,
-            //            ["customer_type"] = "premium"
-            //        },
-            //        new Dictionary<string, object>
-            //        {
-            //            ["created"] = "Subat2026",
-            //            ["source"] = "Tahsilat-dotnet-test"
-            //        }
-            //    },
-            //    Description = "Integration Test Product"
-            //};
-
-
-            //var response = await tahsilat.Payments.CreateAsync(request);
-
-            //if (!string.IsNullOrEmpty(response.PaymentPageUrl))
-            //{
-            //    // Redirect user to the hosted payment page
-            //    return Redirect(response.PaymentPageUrl);
-            //}
-
-
-            //Ürün ID’leri ile Ödeme
-            //var paymnetRequest = new PaymentCreateRequest
-            //{
-            //    Currency = "TRY",
-            //    Amount = 5000,
-            //    ProductIds = new List<long>
-            //    {
-            //        12313213213213
-            //    },
-            //    Metadata = new()
-            //    {
-            //        new Dictionary<string, object>
-            //        {
-            //            ["order_id"] = 123456,
-            //            ["customer_type"] = "premium"
-            //        },
-            //        new Dictionary<string, object>
-            //        {
-            //            ["test"] = "Subat2026",
-            //            ["asd"] = "Tahsilat-dotnet-test"
-            //        }
-            //    }
-            //};
-
-            //Müşteri ile İlişkilendirilmiş Ödeme
-            var customerRequest = new CustomerCreateRequest
+            var customer = await _tahsilat.Customers.CreateAsync(new CustomerCreateRequest
             {
-                Address = "Sarıyer/İstanbul",
-                City = "İstanbul",
-                Country = "TR",
-                District = "Sarıyer",
-                Email = "muhammetgcl@yandex.com",
-                LastName = "SDK Test",
                 Name = "NET TEST",
+                LastName = "SDK Test",
+                Email = "sdk-test@example.com",
                 Phone = "5434589632",
+                Country = "TR",
+                City = "İstanbul",
+                District = "Sarıyer",
+                Address = "Sarıyer/İstanbul",
                 ZipCode = "34000",
                 Metadata = new()
                 {
-                    new Dictionary<string, object>
-                    {
-                        ["customer_type"] = "premium",
-                        ["special_id"] = 123456
-                    }
+                    new Dictionary<string, object> { ["customer_type"] = "premium", ["source"] = "tahsilat-dotnet sample" }
                 }
-            };
+            });
 
-            var customerResponse = await tahsilat.Customers.CreateAsync(customerRequest);
-
-            var productRequest = new ProductCreateRequest
+            var product = await _tahsilat.Products.CreateAsync(new ProductCreateRequest
             {
                 ProductName = "iPhone 15 Pro Max",
-                Price = 500000,
+                Price = 8500000,
                 Description = "256GB Titanium"
-            };
+            });
 
-            var productResponse = await tahsilat.Products.CreateAsync(productRequest);
-
-
-            var request = new PaymentCreateRequest
+            var payment = await _tahsilat.Payments.CreateAsync(new PaymentCreateRequest
             {
                 Currency = "TRY",
-                Amount = 500000,
-                CustomerId = customerResponse.Id,
-                ProductIds = new List<long>
-                {
-                    productResponse.Id
-                },
-                RedirectUrl = $"{Request.Scheme}://{Request.Host}/Home/PaymentResult"
-            };
+                Amount = 8500000,
+                CustomerId = customer.Id,
+                ProductIds = new List<long> { product.Id },
+                RedirectUrl = Url.Action("PaymentResult", "Home", null, Request.Scheme)
+            });
 
-            var response = await tahsilat.Payments.CreateAsync(request);
+            if (!string.IsNullOrEmpty(payment.PaymentPageUrl))
+                return Redirect(payment.PaymentPageUrl);
 
-            //Doğrudan Ödeme
-            //var request = new PaymentCreateRequest
-            //{
-            //    Currency = "TRY",
-            //    Amount = 1000,
-            //    Metadata = new()
-            //    {
-            //        new Dictionary<string, object>
-            //        {
-            //            ["order_id"] = 123456,
-            //            ["customer_type"] = "premium"
-            //        }
-            //    }
-            //};
-
-            //var response = await tahsilat.Payments.CreateAsync(request);
-
-
-            if (!string.IsNullOrEmpty(response.PaymentPageUrl))
-            {
-                // Redirect user to the hosted payment page
-                return Redirect(response.PaymentPageUrl);
-            }
-
-            ViewBag.Error = "Payment page URL not returned.";
-            return View("Index");
+            ViewBag.Error = "Ödeme sayfası adresi dönmedi.";
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating payment.");
-            ViewBag.Error = ex.Message;
-            return View("Index");
+            _logger.LogError(ex, "Ödeme oluşturma hatası.");
+            ViewBag.Error = Describe(ex);
         }
+
+        return View("Index");
     }
 
+    /// <summary>
+    /// RedirectUrl'e dönüş. Yönlendirme ödeme onayı değildir; sonuç API'den sorgulanır.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> PaymentResult([FromQuery(Name = "transaction_id")] long transactionId)
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-            var transaction = await tahsilat.Transactions.RetrieveAsync(transactionId);
+            var transaction = await _tahsilat.Transactions.RetrieveAsync(transactionId);
 
             ViewBag.TransactionId = transactionId;
             ViewBag.Transaction = transaction;
-
-            if (transaction.IsSuccess())
-            {
-                ViewBag.Success = true;
-            }
-            else
-            {
-                ViewBag.Success = false;
+            ViewBag.Success = transaction.IsSuccess();
+            if (!transaction.IsSuccess())
                 ViewBag.Error = $"Ödeme başarısız. Durum: {transaction.PaymentStatusText}";
-            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Ödeme sonucu doğrulama hatası.");
-            ViewBag.Error = ex.Message;
+            ViewBag.Error = Describe(ex);
         }
 
         return View();
@@ -293,42 +114,67 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-            var transaction = await tahsilat.Transactions.RetrieveAsync(transaction_id.Value);
+            var transaction = await _tahsilat.Transactions.RetrieveAsync(transaction_id ?? 0);
 
-            if (transaction.IsSuccess())
-            {
-                ViewBag.Success = true;
-                ViewBag.Message = $"Payment Successful! Ref: {transaction.TransactionId}";
-                ViewBag.Details = transaction;
-            }
-            else
-            {
-                ViewBag.Success = false;
-                ViewBag.Message = $"Payment Failed or Pending. Status: {transaction.PaymentStatusText}";
-                ViewBag.Details = transaction;
-            }
+            ViewBag.Success = transaction.IsSuccess();
+            ViewBag.Message = transaction.IsSuccess()
+                ? $"Payment Successful! Ref: {transaction.TransactionId}"
+                : $"Payment Failed or Pending. Status: {transaction.PaymentStatusText}";
+            ViewBag.Details = transaction;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error verifying transaction.");
             ViewBag.Success = false;
-            ViewBag.Message = "Error verifying transaction: " + ex.Message;
+            ViewBag.Message = "Error verifying transaction: " + Describe(ex);
         }
 
         return View();
     }
 
-    public IActionResult Privacy()
+    // ---------------------------------------------------------------- Ödeme başlatma
+
+    [HttpGet]
+    public IActionResult StartPayment()
     {
-        return View();
+        return View(new PaymentFormModel());
     }
 
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
+    /// <summary>
+    /// Kayıtlı ürün ID'leri ile ödeme. Abonelik ürünü içeriyorsa ilk 3D ödeme
+    /// tamamlanınca abonelik otomatik oluşur.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> StartPayment(PaymentFormModel model)
     {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        try
+        {
+            var request = new PaymentCreateRequest
+            {
+                Amount = model.Amount,
+                Currency = model.Currency,
+                CustomerId = model.CustomerId,
+                ProductIds = ParseIds(model.ProductIds),
+                SubscriptionCredentialId = model.SubscriptionCredentialId,
+                PreAuth = model.PreAuth,
+                Description = model.Description,
+                Metadata = ParseMetadata(model.Metadata),
+                RedirectUrl = Url.Action("PaymentResult", "Home", null, Request.Scheme)
+            };
+
+            var payment = await _tahsilat.Payments.CreateAsync(request);
+            ViewBag.Result = payment;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ödeme başlatma hatası.");
+            ViewBag.Error = Describe(ex);
+        }
+
+        return View(model);
     }
+
+    // ---------------------------------------------------------------- Sorgular
 
     [HttpGet]
     public IActionResult BinLookup()
@@ -341,16 +187,14 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-            var result = await tahsilat.BinLookup.DetailAsync(binNumber);
-            ViewBag.Result = result;
+            ViewBag.Result = await _tahsilat.BinLookup.DetailAsync(binNumber);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Bin Sorgulama hatası.");
-            ViewBag.Error = ex.Message;
+            ViewBag.Error = Describe(ex);
         }
-        
+
         return View();
     }
 
@@ -365,49 +209,45 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-
             // BIN verilirse o karta uygulanacak oranlar, verilmezse üye işyerinin
             // tüm aktif POS'larının oranları döner.
-            var result = binNumber.HasValue
-                ? await tahsilat.Commissions.SearchAsync(new CommissionSearchRequest { BinNumber = binNumber })
-                : await tahsilat.Commissions.SearchAsync();
-
-            ViewBag.Result = result;
+            ViewBag.Result = await _tahsilat.Commissions.SearchAsync(
+                binNumber.HasValue ? new CommissionSearchRequest { BinNumber = binNumber } : null);
             ViewBag.Price = price;
             ViewBag.BinNumber = binNumber;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Taksit Sorgulama hatası.");
-            ViewBag.Error = ex.Message;
+            ViewBag.Error = Describe(ex);
         }
 
         return View();
     }
 
     [HttpGet]
-    public IActionResult CreateProduct()
+    public IActionResult TransactionResult()
     {
         return View();
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateProduct(ProductCreateRequest model)
+    public async Task<IActionResult> TransactionResult(long transactionId)
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-            var result = await tahsilat.Products.CreateAsync(model);
-            ViewBag.Result = result;
+            ViewBag.Result = await _tahsilat.Transactions.RetrieveAsync(transactionId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ürün oluşturma hatası.");
-            ViewBag.Error = ex.Message;
+            _logger.LogError(ex, "İşlem sonucu sorgulama hatası");
+            ViewBag.Error = Describe(ex);
         }
-        return View(model);
+
+        return View();
     }
+
+    // ---------------------------------------------------------------- Müşteri
 
     [HttpGet]
     public IActionResult CreateCustomer()
@@ -420,15 +260,189 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-            var result = await tahsilat.Customers.CreateAsync(model);
-            ViewBag.Result = result;
+            ViewBag.Result = await _tahsilat.Customers.CreateAsync(model);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Müşteri oluşturma hatası.");
-            ViewBag.Error = ex.Message;
+            ViewBag.Error = Describe(ex);
         }
+
+        return View(model);
+    }
+
+    [HttpGet]
+    public IActionResult SearchCustomers()
+    {
+        return View(new CustomerSearchRequest { Limit = 20 });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SearchCustomers(CustomerSearchRequest model)
+    {
+        try
+        {
+            ViewBag.Result = await _tahsilat.Customers.SearchAsync(model);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Müşteri arama hatası.");
+            ViewBag.Error = Describe(ex);
+        }
+
+        return View(model);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteCustomer(long customerId)
+    {
+        try
+        {
+            var deleted = await _tahsilat.Customers.DeleteAsync(customerId);
+            TempData["Message"] = deleted ? $"Müşteri {customerId} silindi." : $"Müşteri {customerId} silinemedi.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Müşteri silme hatası.");
+            TempData["Error"] = Describe(ex);
+        }
+
+        return RedirectToAction(nameof(SearchCustomers));
+    }
+
+    // ---------------------------------------------------------------- Ürün
+
+    [HttpGet]
+    public IActionResult CreateProduct()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateProduct(ProductCreateRequest model)
+    {
+        try
+        {
+            // Abonelik kutusu işaretli değilse alanları hiç gönderme.
+            if (model.IsRecurring != true)
+            {
+                model.IsRecurring = null;
+                model.BillingInterval = null;
+                model.IntervalCount = null;
+            }
+
+            ViewBag.Result = await _tahsilat.Products.CreateAsync(model);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ürün oluşturma hatası.");
+            ViewBag.Error = Describe(ex);
+        }
+
+        return View(model);
+    }
+
+    [HttpGet]
+    public IActionResult SearchProducts()
+    {
+        return View(new ProductSearchRequest { Limit = 20 });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SearchProducts(ProductSearchRequest model)
+    {
+        try
+        {
+            // Fiyat girilmediyse financial[] bloğunu gönderme.
+            if (model.Financial != null && model.Financial.Price == null)
+                model.Financial = null;
+
+            ViewBag.Result = await _tahsilat.Products.SearchAsync(model);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ürün arama hatası.");
+            ViewBag.Error = Describe(ex);
+        }
+
+        return View(model);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteProduct(long productId)
+    {
+        try
+        {
+            var deleted = await _tahsilat.Products.DeleteAsync(productId);
+            TempData["Message"] = deleted ? $"Ürün {productId} silindi." : $"Ürün {productId} silinemedi.";
+        }
+        catch (TahsilatConflictException ex)
+        {
+            // Aktif aboneliğe bağlı ürün silinemez (409).
+            TempData["Error"] = "Çakışma: " + Describe(ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ürün silme hatası.");
+            TempData["Error"] = Describe(ex);
+        }
+
+        return RedirectToAction(nameof(SearchProducts));
+    }
+
+    [HttpGet]
+    public IActionResult UpdateProductMetadata(long? productId)
+    {
+        return View(new MetadataFormModel { ProductId = productId ?? 0 });
+    }
+
+    /// <summary>
+    /// Gönderilen liste ürünün mevcut metadata'sının tamamının yerine geçer.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> UpdateProductMetadata(MetadataFormModel model)
+    {
+        try
+        {
+            var metadata = ParseMetadata(model.Metadata) ?? new List<Dictionary<string, object>>();
+            ViewBag.Result = await _tahsilat.Products.UpdateMetadataAsync(model.ProductId, metadata);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Metadata güncelleme hatası.");
+            ViewBag.Error = Describe(ex);
+        }
+
+        return View(model);
+    }
+
+    // ---------------------------------------------------------------- İade / Ön provizyon
+
+    [HttpGet]
+    public IActionResult Refund()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Refund(RefundCreateRequest model)
+    {
+        try
+        {
+            ViewBag.Result = await _tahsilat.Transactions.RefundAsync(model);
+        }
+        catch (TahsilatApiException ex) when (ex.StatusCode == 200)
+        {
+            // 1.2.0: banka iadeyi reddederse Status=false dönmez, exception fırlar.
+            ViewBag.Rejected = true;
+            ViewBag.Error = $"İade reddedildi: {ex.Message} (kod: {ex.ErrorCode})";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "İade işlemi hatası.");
+            ViewBag.Error = Describe(ex);
+        }
+
         return View(model);
     }
 
@@ -443,67 +457,87 @@ public class HomeController : Controller
     {
         try
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-            var request = new PreAuthResolveRequest
+            ViewBag.Result = await _tahsilat.Transactions.ResolvePreAuthAsync(new PreAuthResolveRequest
             {
                 TransactionId = transactionId,
                 Status = status
-            };
-            var response = await tahsilat.Transactions.ResolvePreAuthAsync(request);
-            ViewBag.Result = response;
+            });
+        }
+        catch (TahsilatApiException ex) when (ex.StatusCode == 200)
+        {
+            ViewBag.Rejected = true;
+            ViewBag.Error = $"İşlem reddedildi: {ex.Message} (kod: {ex.ErrorCode})";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Pre-Auth Resolve hatası.");
-            ViewBag.Error = ex.Message;
+            ViewBag.Error = Describe(ex);
         }
+
         return View();
     }
 
-    [HttpGet]
-    public IActionResult Refund()
+    // ---------------------------------------------------------------- Diğer
+
+    public IActionResult Privacy()
     {
         return View();
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Refund(RefundCreateRequest model)
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error()
     {
-        try
-        {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-            var result = await tahsilat.Transactions.RefundAsync(model);
-            ViewBag.Result = result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "İade işlemi hatası.");
-            ViewBag.Error = ex.Message;
-        }
-        return View(model);
+        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 
-    [HttpGet]
-    public IActionResult TransactionResult()
+    // ---------------------------------------------------------------- Yardımcılar
+
+    /// <summary>
+    /// SDK exception'larını kullanıcıya okunur şekilde yazar: tür, hata kodu,
+    /// alan bazlı doğrulama hataları, ağ hatalarında iç exception.
+    /// </summary>
+    private static string Describe(Exception ex)
     {
-        return View();
+        var sb = new StringBuilder();
+        sb.Append('[').Append(ex.GetType().Name).Append("] ").Append(ex.Message);
+
+        if (ex is TahsilatException te && !string.IsNullOrEmpty(te.ErrorCode))
+            sb.Append(" (error_code: ").Append(te.ErrorCode).Append(')');
+
+        if (ex is TahsilatValidationException ve && ve.Errors.Count > 0)
+        {
+            foreach (var field in ve.Errors)
+                sb.Append(" • ").Append(field.Key).Append(": ").Append(string.Join(", ", field.Value));
+        }
+
+        if (ex is TahsilatNetworkException ne && ne.InnerException != null)
+            sb.Append(" — ").Append(ne.InnerException.GetType().Name).Append(": ").Append(ne.InnerException.Message);
+
+        return sb.ToString();
     }
 
-    [HttpPost]
-    public async Task<IActionResult> TransactionResult(long transactionId)
+    private static List<long>? ParseIds(string? text)
     {
-        try
+        if (string.IsNullOrWhiteSpace(text)) return null;
+
+        return text.Split(new[] { ',', ';', ' ', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => long.Parse(s.Trim()))
+            .ToList();
+    }
+
+    /// <summary>Satır başına "key=value" metnini SDK'nın metadata biçimine çevirir.</summary>
+    private static List<Dictionary<string, object>>? ParseMetadata(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+
+        var list = new List<Dictionary<string, object>>();
+        foreach (var line in text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
-            var tahsilat = new TahsilatClient("sk_test_YOUR_SECRET_KEY");
-            var result = await tahsilat.Transactions.RetrieveAsync(transactionId);
-            ViewBag.Result = result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "İşlem sonucu sorgulama hatası");
-            ViewBag.Error = ex.Message;
+            var parts = line.Split('=', 2);
+            if (parts.Length != 2) continue;
+            list.Add(new Dictionary<string, object> { [parts[0].Trim()] = parts[1].Trim() });
         }
 
-        return View();
+        return list.Count == 0 ? null : list;
     }
 }

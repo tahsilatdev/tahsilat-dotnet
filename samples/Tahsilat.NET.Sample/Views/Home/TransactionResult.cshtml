@@ -77,6 +77,26 @@
 
                         <dt class="col-sm-4">İşlem Tarihi</dt>
                         <dd class="col-sm-8">@result.CreatedAt</dd>
+
+                        <dt class="col-sm-4">Abonelik</dt>
+                        <dd class="col-sm-8">
+                            @if (result.Subscription != null)
+                            {
+                                var sub = result.Subscription;
+                                <div>ID: <code>@sub.SubscriptionId</code></div>
+                                <div>Durum: <span class="badge bg-primary">@sub.GetStatusTextTr()</span> <small class="text-muted">(@sub.StatusText / @sub.Status)</small></div>
+                                <div>Dönem: @sub.CycleNumber @(sub.IsInitialPayment ? "(ilk 3D ödeme)" : "")</div>
+                                <div>Sonraki tahsilat: @sub.NextBillingAt</div>
+                                @if (!string.IsNullOrEmpty((string)sub.CancelledAt))
+                                {
+                                    <div>İptal: @sub.CancelledAt</div>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Abonelik dışı işlem</span>
+                            }
+                        </dd>
                     </dl>
                 </div>
             </div>

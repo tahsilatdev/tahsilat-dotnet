@@ -24,6 +24,10 @@
 	  <None Update="appsettings.json">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
+	  <!-- Sandbox anahtarı burada; dosya git'e girmez (.gitignore) -->
+	  <None Update="appsettings.local.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 
 </Project>

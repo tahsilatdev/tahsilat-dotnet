@@ -1,0 +1,90 @@
+@using System.Text.Json
+@using Tahsilat.NET.Models.Responses
+@model Tahsilat.NET.Sample.Models.PaymentFormModel
+@{
+    ViewData["Title"] = "Ödeme Başlat";
+    var result = ViewBag.Result as PaymentResponse;
+}
+
+<div class="text-center">
+    <h1 class="display-4">Ödeme Başlat</h1>
+    <p>
+        Kayıtlı ürün ID'leri ile 3DS ödeme başlatın. Ürünlerden biri abonelik ürünüyse
+        müşteri ilk 3D ödemeyi tamamladığında abonelik otomatik oluşur.
+    </p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">@ViewBag.Error</div>
+        }
+
+        @if (result != null)
+        {
+            <div class="alert alert-success">
+                <strong>Ödeme oluşturuldu.</strong> İşlem No: <code>@result.TransactionId</code>
+                <div class="mt-2">
+                    <a class="btn btn-primary" href="@result.PaymentPageUrl" target="_blank">Ödeme sayfasını aç</a>
+                    <small class="text-muted ms-2">Sayfa @result.ExpiresAt tarihine kadar geçerli</small>
+                </div>
+                <div class="mt-2 small">
+                    Ödeme bittiğinde <code>RedirectUrl</code> bu uygulamanın <code>/Home/PaymentResult</code> adresine döner
+                    ve sonuç API'den sorgulanır; webhook da <a asp-controller="Webhook" asp-action="Index">Webhook Kayıtları</a> sayfasına düşer.
+                </div>
+            </div>
+            <details class="mb-3">
+                <summary>Raw JSON Response</summary>
+                <pre>@JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </details>
+        }
+
+        <form asp-action="StartPayment" method="post">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Amount" class="form-label">Tutar (kuruş)</label>
+                    <input asp-for="Amount" type="number" class="form-control">
+                    <small class="text-muted">Ürünlerin toplamıyla eşleşmeli. 49900 = 499,00 TL</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Currency" class="form-label">Para Birimi</label>
+                    <input asp-for="Currency" class="form-control">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label asp-for="ProductIds" class="form-label">Ürün ID'leri</label>
+                <input asp-for="ProductIds" class="form-control" placeholder="55437751141488, 84920468860151">
+                <small class="text-muted">
+                    Virgülle ayırın. <a asp-action="CreateProduct">Ürün oluştur</a> ·
+                    <a asp-action="SearchProducts">Ürün ara</a>. Abonelik yalnız kayıtlı ürün ID'si ile başlar.
+                </small>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="CustomerId" class="form-label">Müşteri ID <span class="text-muted">(opsiyonel)</span></label>
+                    <input asp-for="CustomerId" type="number" class="form-control">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="SubscriptionCredentialId" class="form-label">Abonelik POS ID <span class="text-muted">(opsiyonel)</span></label>
+                    <input asp-for="SubscriptionCredentialId" type="number" class="form-control">
+                    <small class="text-muted">Birden fazla abonelik destekli POS varsa zorunlu.</small>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label">Açıklama</label>
+                <input asp-for="Description" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label asp-for="Metadata" class="form-label">Metadata <span class="text-muted">(satır başına key=value)</span></label>
+                <textarea asp-for="Metadata" class="form-control" rows="3" placeholder="order_id=12345&#10;customer_type=premium"></textarea>
+                <small class="text-muted">Türkçe karakterler olduğu gibi gönderilir: <code>branch=İstanbul şubesi</code></small>
+            </div>
+            <div class="form-check mb-3">
+                <input asp-for="PreAuth" class="form-check-input" type="checkbox">
+                <label asp-for="PreAuth" class="form-check-label">Ön provizyon (tutar bloke edilir, sonra kapatılır)</label>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Ödeme Oluştur</button>
+        </form>
+    </div>
+</div>
