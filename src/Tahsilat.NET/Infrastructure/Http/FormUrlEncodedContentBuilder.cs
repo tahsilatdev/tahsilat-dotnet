@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace Tahsilat.NET.Infrastructure.Http
 {
@@ -18,8 +17,6 @@ namespace Tahsilat.NET.Infrastructure.Http
         {
             "products",
         };
-
-        private static readonly Regex MetadataValueInvalidChars = new Regex(@"[^a-zA-Z0-9 ._]", RegexOptions.Compiled);
 
         public static FormUrlEncodedContent Build(object obj)
         {
@@ -119,8 +116,10 @@ namespace Tahsilat.NET.Infrastructure.Http
                     result.Add(new KeyValuePair<string, string>(
                         $"metadata[{index}][key]", kv.Key));
 
+                    // Sent verbatim: the API accepts and stores any character
+                    // (up to 200), so "İstanbul şubesi" must not become "_stanbul _ubesi".
                     result.Add(new KeyValuePair<string, string>(
-                        $"metadata[{index}][value]", SanitizeMetadataValue(kv.Value)));
+                        $"metadata[{index}][value]", kv.Value?.ToString() ?? string.Empty));
 
                     index++;
 
@@ -128,13 +127,6 @@ namespace Tahsilat.NET.Infrastructure.Http
                         throw new InvalidOperationException("Metadata en fazla 25 nesne olabilir.");
                 }
             }
-        }
-
-        private static string SanitizeMetadataValue(object? value)
-        {
-            var s = value?.ToString() ?? string.Empty;
-
-            return MetadataValueInvalidChars.Replace(s, "_");
         }
 
         private static void AppendPhpArray(string fieldName, object value, List<KeyValuePair<string, string>> result)
