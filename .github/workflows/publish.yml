@@ -61,8 +61,14 @@ jobs:
       - name: Unit tests
         run: dotnet test tests/Tahsilat.NET.Tests/Tahsilat.NET.Tests.csproj -c Release --nologo
 
+      # Build every target framework first: with GeneratePackageOnBuild the pack
+      # target otherwise runs before all TFMs are compiled and fails with NU5026
+      # ("lib/net452/Tahsilat.NET.dll not found").
+      - name: Build all target frameworks
+        run: dotnet build src/Tahsilat.NET/Tahsilat.NET.csproj -c Release --nologo
+
       - name: Pack
-        run: dotnet pack src/Tahsilat.NET/Tahsilat.NET.csproj -c Release --nologo -o artifacts
+        run: dotnet pack src/Tahsilat.NET/Tahsilat.NET.csproj -c Release --nologo --no-build -o artifacts
 
       - name: NuGet login (OIDC -> temporary API key)
         uses: NuGet/login@v1
